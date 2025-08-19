@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/authService';
 import { folderService } from '../../services/folderService';
 import { fileService } from '../../services/fileService';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 
 interface DashboardStats {
   totalUsers: number;
@@ -114,32 +115,35 @@ export default function AdminDashboard() {
       </View>
 
       {/* Acciones Rápidas */}
-      <View style={styles.actionsContainer}>
-        <Text style={styles.sectionTitle}>⚡ Acciones Rápidas</Text>
+      <View style={styles.quickActionsSection}>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="flash" size={20} color="#FFD700" />
+          <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
+        </View>
         
-        <View style={styles.actionButtons}>
-          <TouchableOpacity 
-            style={[styles.actionButton, styles.primaryAction]} 
-            onPress={() => navigateTo('NuevoUsuario')}
+        <View style={styles.quickActionsGrid}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.blueBorder]}
+            onPress={() => navigation.navigate('NuevoUsuario' as never)}
           >
-            <Text style={styles.actionIcon}>👤</Text>
-            <Text style={styles.actionText}>Nuevo Usuario</Text>
+            <Ionicons name="person-add" size={32} color="#007AFF" />
+            <Text style={styles.actionButtonText}>Nuevo Usuario</Text>
           </TouchableOpacity>
           
           <TouchableOpacity
-            style={[styles.actionButton, styles.secondaryAction]}
-            onPress={() => navigateTo('Carpetas')}
+            style={[styles.actionButton, styles.greenBorder]}
+            onPress={() => navigation.navigate('Carpetas' as never)}
           >
-            <Text style={styles.actionIcon}>📁</Text>
-            <Text style={styles.actionText}>Gestionar Carpetas</Text>
+            <Ionicons name="folder-open" size={32} color="#34C759" />
+            <Text style={styles.actionButtonText}>Gestionar Carpetas</Text>
           </TouchableOpacity>
-
+          
           <TouchableOpacity
-            style={[styles.actionButton, styles.tertiaryAction]}
-            onPress={() => navigateTo('SubirArchivo')}
+            style={[styles.actionButton, styles.redBorder]}
+            onPress={() => navigation.navigate('SubirArchivo' as never)}
           >
-            <Text style={styles.actionIcon}>📤</Text>
-            <Text style={styles.actionText}>Subir Archivo</Text>
+            <Ionicons name="cloud-upload" size={32} color="#FF3B30" />
+            <Text style={styles.actionButtonText}>Subir Archivo</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -370,5 +374,55 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#95a5a6',
     marginTop: 2,
+  },
+  quickActionsSection: {
+    padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 12,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  quickActionsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  actionButton: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginHorizontal: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  blueBorder: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#007AFF',
+  },
+  greenBorder: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#34C759',
+  },
+  redBorder: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#FF3B30',
+  },
+  actionButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginTop: 8,
   },
 });

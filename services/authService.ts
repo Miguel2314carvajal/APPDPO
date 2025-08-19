@@ -13,9 +13,15 @@ export const authService = {
   },
 
   // Registro de usuario (solo admin puede registrar)
-  registerUser: async (userData: RegisterUserData): Promise<AuthResponse> => {
+  registerUser: async (userData: RegisterUserData & { carpetaId?: string }): Promise<AuthResponse> => {
     try {
-      const response = await api.post('/users/registro', userData);
+      // Si se proporciona carpetaId, lo convertimos a array de folders
+      const dataToSend = {
+        ...userData,
+        folders: userData.carpetaId ? [userData.carpetaId] : []
+      };
+      
+      const response = await api.post('/users/registro', dataToSend);
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { mensaje: 'Error en el registro' };

@@ -25,49 +25,18 @@ export default function App() {
           initialRouteName="Login"
           screenOptions={{
             headerShown: false,
-            gestureEnabled: false
+            gestureEnabled: false,
+            cardStyle: { backgroundColor: '#f5f5f5' }
           }}
         >
-          <Stack.Screen
-            name="Login"
-            component={LoginScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="Register"
-            component={RegisterScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="AdminDashboard"
-            component={AdminDashboard}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="UserDashboard"
-            component={UserDashboard}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="Usuarios"
-            component={UsuariosScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="NuevoUsuario"
-            component={NuevoUsuarioScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="Carpetas"
-            component={CarpetasScreen}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen
-            name="SubirArchivo"
-            component={SubirArchivoScreen}
-            options={{ headerShown: false }}
-          />
+          <Stack.Screen name="Login" component={LoginScreen} />
+          <Stack.Screen name="Register" component={RegisterScreen} />
+          <Stack.Screen name="AdminDashboard" component={AdminDashboard} />
+          <Stack.Screen name="UserDashboard" component={UserDashboard} />
+          <Stack.Screen name="NuevoUsuario" component={NuevoUsuarioScreen} />
+          <Stack.Screen name="Usuarios" component={UsuariosScreen} />
+          <Stack.Screen name="Carpetas" component={CarpetasScreen} />
+          <Stack.Screen name="SubirArchivo" component={SubirArchivoScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </AuthProvider>
