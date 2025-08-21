@@ -8,7 +8,7 @@ export interface UpdateUserData {
   telefono?: string;
   direccion?: string;
   rol?: string;
-  carpetaId?: string;
+  folders?: string[];
 }
 
 export const authService = {
@@ -23,15 +23,9 @@ export const authService = {
   },
 
   // Registro de usuario (solo admin puede registrar)
-  registerUser: async (userData: RegisterUserData & { carpetaId?: string }): Promise<AuthResponse> => {
+  registerUser: async (userData: RegisterUserData & { folders?: string[] }): Promise<AuthResponse> => {
     try {
-      // Si se proporciona carpetaId, lo convertimos a array de folders
-      const dataToSend = {
-        ...userData,
-        folders: userData.carpetaId ? [userData.carpetaId] : []
-      };
-      
-      const response = await api.post('/users/registro', dataToSend);
+      const response = await api.post('/users/registro', userData);
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { mensaje: 'Error en el registro' };

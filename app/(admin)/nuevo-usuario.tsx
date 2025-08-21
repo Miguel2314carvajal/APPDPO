@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,8 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { authService } from '../../services/authService';
-import FolderSelector from '../../components/FolderSelector';
+import { folderService } from '../../services/folderService';
+import MultiFolderSelector from '../../components/MultiFolderSelector';
 
 interface Folder {
   _id: string;
@@ -25,6 +26,9 @@ interface Folder {
 
 export default function NuevoUsuarioScreen() {
   const navigation = useNavigation();
+  const [loading, setLoading] = useState(false);
+  const [selectedFolders, setSelectedFolders] = useState<Folder[]>([]);
+
   const [formData, setFormData] = useState({
     nombres: '',
     apellidos: '',
@@ -34,32 +38,46 @@ export default function NuevoUsuarioScreen() {
     direccion: '',
     carpetaId: '',
   });
-  const [loading, setLoading] = useState(false);
-  const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleFolderSelect = (folder: Folder) => {
-    setSelectedFolder(folder);
-    setFormData(prev => ({ ...prev, carpetaId: folder._id }));
+  const handleFoldersSelect = (folders: Folder[]) => {
+    setSelectedFolders(folders);
+    // Mantener carpetaId para compatibilidad con el backend
+    if (folders.length > 0) {
+      setFormData(prev => ({ ...prev, carpetaId: folders[0]._id }));
+    } else {
+      setFormData(prev => ({ ...prev, carpetaId: '' }));
+    }
   };
 
   const handleSubmit = async () => {
     // Validar campos requeridos
     if (!formData.nombres || !formData.apellidos || !formData.cedula || 
-        !formData.telefono || !formData.email || !formData.direccion || !formData.carpetaId) {
-      Alert.alert('Error', 'Todos los campos son obligatorios, incluyendo la carpeta');
+        !formData.telefono || !formData.email || !formData.direccion) {
+      Alert.alert('Error', 'Todos los campos son obligatorios');
+      return;
+    }
+
+    if (selectedFolders.length === 0) {
+      Alert.alert('Error', 'Debes seleccionar al menos una carpeta para el usuario');
       return;
     }
 
     setLoading(true);
     try {
-      await authService.registerUser(formData);
+      // Preparar datos con múltiples carpetas
+      const userData = {
+        ...formData,
+        folders: selectedFolders.map(folder => folder._id)
+      };
+
+      await authService.registerUser(userData);
       Alert.alert(
         'Éxito', 
-        'Usuario creado correctamente. Se enviará un email con las credenciales temporales.',
+        `Usuario creado correctamente con acceso a ${selectedFolders.length} carpeta${selectedFolders.length !== 1 ? 's' : ''}. Se enviará un email con las credenciales temporales.`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } catch (error: any) {
@@ -160,16 +178,16 @@ export default function NuevoUsuarioScreen() {
 
         <View style={styles.sectionHeader}>
           <Ionicons name="folder" size={24} color="#007AFF" />
-          <Text style={styles.sectionTitle}>Asignación de Carpeta</Text>
+          <Text style={styles.sectionTitle}>Asignación de Carpetas</Text>
         </View>
 
         {/* Selector de Carpeta */}
         <View style={styles.folderSelectorContainer}>
-          <Text style={styles.inputLabel}>Carpeta Asignada *</Text>
-          <FolderSelector
-            selectedFolder={selectedFolder}
-            onFolderSelect={handleFolderSelect}
-            placeholder="Seleccionar carpeta"
+          <Text style={styles.inputLabel}>Carpetas Asignadas *</Text>
+          <MultiFolderSelector
+            selectedFolders={selectedFolders}
+            onFoldersSelect={handleFoldersSelect}
+            placeholder="Seleccionar carpetas"
           />
         </View>
 
@@ -179,7 +197,8 @@ export default function NuevoUsuarioScreen() {
             <Text style={styles.infoTitle}>Información importante:</Text>
             <Text style={styles.infoText}>
               • El usuario recibirá un email con credenciales temporales{'\n'}
-              • Se le asignará acceso solo a la carpeta seleccionada{'\n'}
+              • Se le asignará acceso a todas las carpetas seleccionadas{'\n'}
+              • Puedes seleccionar múltiples carpetas usando los checkboxes{'\n'}
               • Podrá cambiar su contraseña después del primer login
             </Text>
           </View>

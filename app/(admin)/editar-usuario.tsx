@@ -13,7 +13,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { authService } from '../../services/authService';
 import { folderService } from '../../services/folderService';
-import FolderSelector from '../../components/FolderSelector';
+import MultiFolderSelector from '../../components/MultiFolderSelector';
 
 interface User {
   _id: string;
@@ -43,7 +43,7 @@ export default function EditarUsuarioScreen() {
 
   const [user, setUser] = useState<User | null>(null);
   const [folders, setFolders] = useState<Folder[]>([]);
-  const [selectedFolder, setSelectedFolder] = useState<Folder | null>(null);
+  const [selectedFolders, setSelectedFolders] = useState<Folder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -85,12 +85,10 @@ export default function EditarUsuarioScreen() {
         rol: userData.rol || 'usuario',
       });
 
-      // Si el usuario tiene carpetas asignadas, seleccionar la primera
+      // Si el usuario tiene carpetas asignadas, seleccionarlas
       if (userData.folders && userData.folders.length > 0) {
-        const userFolder = foldersData.find(f => f._id === userData.folders[0]);
-        if (userFolder) {
-          setSelectedFolder(userFolder);
-        }
+        const userFolders = foldersData.filter(f => userData.folders.includes(f._id));
+        setSelectedFolders(userFolders);
       }
 
     } catch (error: any) {
@@ -105,8 +103,8 @@ export default function EditarUsuarioScreen() {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleFolderSelect = (folder: Folder) => {
-    setSelectedFolder(folder);
+  const handleFoldersSelect = (folders: Folder[]) => {
+    setSelectedFolders(folders);
   };
 
   const handleSave = async () => {
@@ -117,8 +115,8 @@ export default function EditarUsuarioScreen() {
       return;
     }
 
-    if (!selectedFolder) {
-      Alert.alert('Error', 'Debes seleccionar una carpeta para el usuario');
+    if (selectedFolders.length === 0) {
+      Alert.alert('Error', 'Debes seleccionar al menos una carpeta para el usuario');
       return;
     }
 
@@ -127,14 +125,14 @@ export default function EditarUsuarioScreen() {
 
       const updateData = {
         ...formData,
-        carpetaId: selectedFolder._id
+        folders: selectedFolders.map(folder => folder._id)
       };
 
       await authService.updateUser(cedula, updateData);
 
       Alert.alert(
         'Éxito', 
-        'Usuario actualizado correctamente',
+        `Usuario actualizado correctamente con acceso a ${selectedFolders.length} carpeta${selectedFolders.length !== 1 ? 's' : ''}`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } catch (error: any) {
@@ -342,16 +340,16 @@ export default function EditarUsuarioScreen() {
 
         <View style={styles.sectionHeader}>
           <Ionicons name="folder" size={24} color="#007AFF" />
-          <Text style={styles.sectionTitle}>Asignación de Carpeta</Text>
+          <Text style={styles.sectionTitle}>Asignación de Carpetas</Text>
         </View>
 
         {/* Selector de Carpeta */}
         <View style={styles.folderSelectorContainer}>
-          <Text style={styles.inputLabel}>Carpeta Asignada *</Text>
-          <FolderSelector
-            selectedFolder={selectedFolder}
-            onFolderSelect={handleFolderSelect}
-            placeholder="Seleccionar carpeta"
+          <Text style={styles.inputLabel}>Carpetas Asignadas *</Text>
+          <MultiFolderSelector
+            selectedFolders={selectedFolders}
+            onFoldersSelect={handleFoldersSelect}
+            placeholder="Seleccionar carpetas"
           />
         </View>
 
@@ -361,7 +359,8 @@ export default function EditarUsuarioScreen() {
             <Text style={styles.infoTitle}>Información importante:</Text>
             <Text style={styles.infoText}>
               • Los cambios se aplicarán inmediatamente{'\n'}
-              • El usuario mantendrá acceso a la carpeta seleccionada{'\n'}
+              • El usuario mantendrá acceso a todas las carpetas seleccionadas{'\n'}
+              • Puedes seleccionar múltiples carpetas usando los checkboxes{'\n'}
               • La cédula no se puede modificar por seguridad
             </Text>
           </View>

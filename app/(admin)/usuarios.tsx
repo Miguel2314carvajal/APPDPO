@@ -23,6 +23,7 @@ interface User {
   telefono: string;
   rol: string;
   createdAt: string;
+  folders?: string[]; // Added folders property
 }
 
 export default function UsuariosScreen() {
@@ -228,6 +229,9 @@ export default function UsuariosScreen() {
                   <Text style={styles.userPhone}>{user.telefono}</Text>
                   <Text style={styles.userRole}>
                     {user.rol === 'admin' ? '👑 Administrador' : '👤 Usuario'}
+                  </Text>
+                  <Text style={styles.userFolders}>
+                    📁 {user.folders?.length || 0} carpeta{(user.folders?.length || 0) !== 1 ? 's' : ''} asignada{(user.folders?.length || 0) !== 1 ? 's' : ''}
                   </Text>
                   <Text style={styles.userDate}>
                     Creado: {formatDate(user.createdAt)}
@@ -453,6 +457,11 @@ const styles = StyleSheet.create({
   userRole: {
     fontSize: 12,
     color: '#95a5a6',
+    marginBottom: 2,
+  },
+  userFolders: {
+    fontSize: 12,
+    color: '#7f8c8d',
     marginBottom: 2,
   },
   userDate: {
