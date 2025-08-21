@@ -10,6 +10,7 @@ import {
   RefreshControl
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { folderService } from '../../services/folderService';
 import { authService } from '../../services/authService';
@@ -181,7 +182,16 @@ export default function UserDashboard() {
           <Text style={styles.infoValue}>{user?.telefono}</Text>
           
           <Text style={styles.infoLabel}>Dirección:</Text>
-          <Text style={styles.infoValue}>{user?.direccion}</Text>
+          <Text style={styles.infoValue}>{user?.direccion || 'No especificada'}</Text>
+          
+          {/* Botón para cambiar contraseña */}
+          <TouchableOpacity
+            style={styles.changePasswordButton}
+            onPress={() => navigation.navigate('CambiarContrasena')}
+          >
+            <Ionicons name="key" size={16} color="#3498db" />
+            <Text style={styles.changePasswordText}>Cambiar Contraseña</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -218,23 +228,6 @@ export default function UserDashboard() {
             ))}
           </View>
         )}
-      </View>
-
-      {/* Estadísticas */}
-      <View style={styles.statsContainer}>
-        <Text style={styles.sectionTitle}>📊 Resumen</Text>
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>{folders.length}</Text>
-            <Text style={styles.statLabel}>Carpetas</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statNumber}>
-              {folders.reduce((total, folder) => total + (folder.files?.length || 0), 0)}
-            </Text>
-            <Text style={styles.statLabel}>Archivos</Text>
-          </View>
-        </View>
       </View>
     </ScrollView>
   );
@@ -419,5 +412,22 @@ const styles = StyleSheet.create({
   statLabel: {
     fontSize: 14,
     color: '#7f8c8d',
+  },
+  changePasswordButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    backgroundColor: '#e0f2f7',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#3498db',
+  },
+  changePasswordText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#3498db',
+    fontWeight: '600',
   },
 });

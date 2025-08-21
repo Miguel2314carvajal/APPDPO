@@ -101,5 +101,19 @@ export const authService = {
       console.error('Error sincronizando carpetas:', error);
       throw error;
     }
+  },
+
+  // Cambiar contraseña del usuario
+  async changePassword(currentPassword: string, newPassword: string): Promise<any> {
+    try {
+      const response = await api.post('/users/cambiar-contrasena', {
+        currentPassword,
+        newPassword
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error cambiando contraseña:', error);
+      throw error.response?.data || { mensaje: 'Error al cambiar contraseña' };
+    }
   }
 };

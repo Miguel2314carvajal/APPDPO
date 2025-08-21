@@ -73,7 +73,8 @@ export default function CarpetaDetalle() {
 
   const downloadFile = async (file: File) => {
     try {
-      console.log('📥 Descargando archivo:', file.name);
+      console.log('📥 Intentando abrir archivo:', file.name);
+      console.log('🔗 URL del archivo:', file.url);
       
       // Verificar si el archivo tiene URL
       if (!file.url) {
@@ -81,17 +82,45 @@ export default function CarpetaDetalle() {
         return;
       }
 
-      // Abrir el archivo en el navegador o aplicación predeterminada
-      const supported = await Linking.canOpenURL(file.url);
-      
-      if (supported) {
-        await Linking.openURL(file.url);
-      } else {
-        Alert.alert('Error', 'No se puede abrir este tipo de archivo');
-      }
+      // Mostrar indicador de carga
+      Alert.alert(
+        'Abriendo archivo',
+        `¿Deseas abrir "${file.name}"?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Abrir',
+            onPress: async () => {
+              try {
+                // Verificar si la URL es válida
+                const supported = await Linking.canOpenURL(file.url);
+                
+                if (supported) {
+                  console.log('✅ URL soportada, abriendo archivo...');
+                  await Linking.openURL(file.url);
+                } else {
+                  console.log('❌ URL no soportada');
+                  Alert.alert(
+                    'No se puede abrir',
+                    `No se puede abrir este tipo de archivo (${file.tipo || 'desconocido'}).\n\nURL: ${file.url}`,
+                    [{ text: 'OK' }]
+                  );
+                }
+              } catch (openError) {
+                console.error('❌ Error abriendo archivo:', openError);
+                Alert.alert(
+                  'Error',
+                  'No se pudo abrir el archivo. Verifica que tengas una aplicación compatible instalada.',
+                  [{ text: 'OK' }]
+                );
+              }
+            }
+          }
+        ]
+      );
     } catch (error) {
-      console.error('❌ Error descargando archivo:', error);
-      Alert.alert('Error', 'No se pudo descargar el archivo');
+      console.error('❌ Error en downloadFile:', error);
+      Alert.alert('Error', 'No se pudo procesar el archivo');
     }
   };
 
