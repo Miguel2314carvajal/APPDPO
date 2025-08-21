@@ -12,13 +12,15 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { folderService } from '../../services/folderService';
+import { authService } from '../../services/authService';
 
 interface Folder {
   _id: string;
-  nombre: string;
-  descripcion: string;
-  archivos: any[];
+  name: string;
+  files: any[];
+  usuarios: string[];
   createdAt: string;
+  updatedAt: string;
 }
 
 export default function UserDashboard() {
@@ -35,16 +37,24 @@ export default function UserDashboard() {
 
   const loadUserFolders = async () => {
     try {
+      console.log('🔄 Cargando carpetas del usuario:', user?.email);
+      console.log('📁 Carpetas asignadas al usuario:', user?.folders);
+      
       setIsLoading(true);
       
       // Obtener las carpetas asignadas al usuario
       if (user?.folders && user.folders.length > 0) {
+        console.log('🔍 Buscando', user.folders.length, 'carpetas...');
+        
         const userFolders = await Promise.all(
           user.folders.map(async (folderId: string) => {
             try {
-              return await folderService.getFolder(folderId);
+              console.log('📂 Cargando carpeta:', folderId);
+              const folder = await folderService.getFolder(folderId);
+              console.log('✅ Carpeta cargada:', folder.name);
+              return folder;
             } catch (error) {
-              console.error(`Error cargando carpeta ${folderId}:`, error);
+              console.error(`❌ Error cargando carpeta ${folderId}:`, error);
               return null;
             }
           })
@@ -52,12 +62,45 @@ export default function UserDashboard() {
         
         // Filtrar carpetas válidas
         const validFolders = userFolders.filter(folder => folder !== null);
+        console.log('📊 Carpetas válidas encontradas:', validFolders.length);
         setFolders(validFolders);
       } else {
-        setFolders([]);
+        console.log('⚠️ Usuario no tiene carpetas asignadas, intentando sincronizar...');
+        
+        // Intentar sincronizar carpetas del usuario
+        try {
+          const syncResult = await authService.syncUserFolders(user?._id);
+          console.log('🔄 Resultado de sincronización:', syncResult);
+          
+          if (syncResult.folders && syncResult.folders.length > 0) {
+            console.log('✅ Carpetas sincronizadas, cargando...');
+            
+            const userFolders = await Promise.all(
+              syncResult.folders.map(async (folderId: string) => {
+                try {
+                  const folder = await folderService.getFolder(folderId);
+                  return folder;
+                } catch (error) {
+                  console.error(`❌ Error cargando carpeta ${folderId}:`, error);
+                  return null;
+                }
+              })
+            );
+            
+            const validFolders = userFolders.filter(folder => folder !== null);
+            console.log('📊 Carpetas válidas después de sincronización:', validFolders.length);
+            setFolders(validFolders);
+          } else {
+            console.log('⚠️ No se encontraron carpetas después de sincronizar');
+            setFolders([]);
+          }
+        } catch (syncError) {
+          console.error('❌ Error sincronizando carpetas:', syncError);
+          setFolders([]);
+        }
       }
     } catch (error: any) {
-      console.error('Error cargando carpetas del usuario:', error);
+      console.error('❌ Error cargando carpetas del usuario:', error);
       Alert.alert('Error', 'No se pudieron cargar las carpetas');
     } finally {
       setIsLoading(false);
@@ -93,12 +136,8 @@ export default function UserDashboard() {
   };
 
   const openFolder = (folder: Folder) => {
-    // Por ahora mostrar información de la carpeta
-    Alert.alert(
-      folder.nombre,
-      `Descripción: ${folder.descripcion}\n\nArchivos: ${folder.archivos?.length || 0} archivos\n\nCreada: ${new Date(folder.createdAt).toLocaleDateString('es-ES')}`,
-      [{ text: 'OK' }]
-    );
+    // Navegar a la pantalla de detalle de carpeta
+    navigation.navigate('CarpetaDetalle', { folderId: folder._id });
   };
 
   if (isLoading) {
@@ -168,9 +207,9 @@ export default function UserDashboard() {
                 activeOpacity={0.7}
               >
                 <Text style={styles.folderIcon}>📁</Text>
-                <Text style={styles.folderName}>{folder.nombre}</Text>
+                <Text style={styles.folderName}>{folder.name}</Text>
                 <Text style={styles.folderFiles}>
-                  {folder.archivos?.length || 0} archivos
+                  {folder.files?.length || 0} archivos
                 </Text>
                 <Text style={styles.folderDate}>
                   {new Date(folder.createdAt).toLocaleDateString('es-ES')}
@@ -191,7 +230,7 @@ export default function UserDashboard() {
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statNumber}>
-              {folders.reduce((total, folder) => total + (folder.archivos?.length || 0), 0)}
+              {folders.reduce((total, folder) => total + (folder.files?.length || 0), 0)}
             </Text>
             <Text style={styles.statLabel}>Archivos</Text>
           </View>

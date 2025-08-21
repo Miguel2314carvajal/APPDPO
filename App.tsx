@@ -14,6 +14,7 @@ import EditarUsuarioScreen from './app/(admin)/editar-usuario';
 import CarpetasScreen from './app/(admin)/carpetas';
 import SubirArchivoScreen from './app/(admin)/subir-archivo';
 import UserDashboard from './app/(user)/dashboard';
+import CarpetaDetalleScreen from './app/(user)/carpeta-detalle';
 
 const Stack = createStackNavigator();
 
@@ -34,6 +35,7 @@ export default function App() {
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="AdminDashboard" component={AdminDashboard} />
           <Stack.Screen name="UserDashboard" component={UserDashboard} />
+          <Stack.Screen name="CarpetaDetalle" component={CarpetaDetalleScreen} />
           <Stack.Screen name="NuevoUsuario" component={NuevoUsuarioScreen} />
           <Stack.Screen name="EditarUsuario" component={EditarUsuarioScreen} />
           <Stack.Screen name="Usuarios" component={UsuariosScreen} />

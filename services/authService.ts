@@ -90,5 +90,16 @@ export const authService = {
     } catch (error: any) {
       throw error.response?.data || { mensaje: 'Error al eliminar usuario' };
     }
+  },
+
+  // Sincronizar carpetas del usuario
+  async syncUserFolders(userId: string): Promise<any> {
+    try {
+      const response = await api.post(`/users/sincronizar-carpetas/${userId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error sincronizando carpetas:', error);
+      throw error;
+    }
   }
 };
