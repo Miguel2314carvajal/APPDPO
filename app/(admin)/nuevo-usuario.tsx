@@ -7,6 +7,7 @@ import {
   ScrollView,
   Alert,
   StyleSheet,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -55,7 +56,7 @@ export default function NuevoUsuarioScreen() {
 
     setLoading(true);
     try {
-      await authService.createUser(formData);
+      await authService.registerUser(formData);
       Alert.alert(
         'Éxito', 
         'Usuario creado correctamente. Se enviará un email con las credenciales temporales.',
@@ -80,61 +81,87 @@ export default function NuevoUsuarioScreen() {
           <Ionicons name="arrow-back" size={24} color="#007AFF" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Ionicons name="person" size={24} color="#007AFF" />
+          <Ionicons name="person-add" size={24} color="#007AFF" />
           <Text style={styles.headerTitle}>Crear Nuevo Usuario</Text>
         </View>
       </View>
 
       <View style={styles.formContainer}>
-        <Text style={styles.sectionTitle}>Información del Usuario</Text>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="person-circle" size={24} color="#007AFF" />
+          <Text style={styles.sectionTitle}>Información del Usuario</Text>
+        </View>
         
-        <TextInput
-          style={styles.input}
-          placeholder="Ingresa los nombres *"
-          value={formData.nombres}
-          onChangeText={(value) => handleInputChange('nombres', value)}
-        />
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Nombres *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Ingresa los nombres"
+            value={formData.nombres}
+            onChangeText={(value) => handleInputChange('nombres', value)}
+          />
+        </View>
         
-        <TextInput
-          style={styles.input}
-          placeholder="Ingresa los apellidos *"
-          value={formData.apellidos}
-          onChangeText={(value) => handleInputChange('apellidos', value)}
-        />
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Apellidos *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Ingresa los apellidos"
+            value={formData.apellidos}
+            onChangeText={(value) => handleInputChange('apellidos', value)}
+          />
+        </View>
         
-        <TextInput
-          style={styles.input}
-          placeholder="Número de cédula *"
-          value={formData.cedula}
-          onChangeText={(value) => handleInputChange('cedula', value)}
-          keyboardType="numeric"
-        />
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Número de cédula *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Ej: 1754864215"
+            value={formData.cedula}
+            onChangeText={(value) => handleInputChange('cedula', value)}
+            keyboardType="numeric"
+          />
+        </View>
         
-        <TextInput
-          style={styles.input}
-          placeholder="Número de teléfono *"
-          value={formData.telefono}
-          onChangeText={(value) => handleInputChange('telefono', value)}
-          keyboardType="phone-pad"
-        />
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Número de teléfono *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Ej: 0987654321"
+            value={formData.telefono}
+            onChangeText={(value) => handleInputChange('telefono', value)}
+            keyboardType="phone-pad"
+          />
+        </View>
         
-        <TextInput
-          style={styles.input}
-          placeholder="tu@email.com *"
-          value={formData.email}
-          onChangeText={(value) => handleInputChange('email', value)}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Correo electrónico *</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="ejemplo@email.com"
+            value={formData.email}
+            onChangeText={(value) => handleInputChange('email', value)}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+        </View>
         
-        <TextInput
-          style={styles.input}
-          placeholder="Dirección completa *"
-          value={formData.direccion}
-          onChangeText={(value) => handleInputChange('direccion', value)}
-          multiline
-          numberOfLines={2}
-        />
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Dirección completa *</Text>
+          <TextInput
+            style={[styles.input, styles.textArea]}
+            placeholder="Ingresa la dirección completa"
+            value={formData.direccion}
+            onChangeText={(value) => handleInputChange('direccion', value)}
+            multiline
+            numberOfLines={3}
+          />
+        </View>
+
+        <View style={styles.sectionHeader}>
+          <Ionicons name="folder" size={24} color="#007AFF" />
+          <Text style={styles.sectionTitle}>Asignación de Carpeta</Text>
+        </View>
 
         {/* Selector de Carpeta */}
         <View style={styles.folderSelectorContainer}>
@@ -148,10 +175,14 @@ export default function NuevoUsuarioScreen() {
 
         <View style={styles.infoBox}>
           <Ionicons name="information-circle" size={20} color="#007AFF" />
-          <Text style={styles.infoText}>
-            • El usuario recibirá un email con credenciales temporales{'\n'}
-            • Se le asignará acceso solo a la carpeta seleccionada
-          </Text>
+          <View style={styles.infoContent}>
+            <Text style={styles.infoTitle}>Información importante:</Text>
+            <Text style={styles.infoText}>
+              • El usuario recibirá un email con credenciales temporales{'\n'}
+              • Se le asignará acceso solo a la carpeta seleccionada{'\n'}
+              • Podrá cambiar su contraseña después del primer login
+            </Text>
+          </View>
         </View>
 
         <TouchableOpacity
@@ -159,9 +190,17 @@ export default function NuevoUsuarioScreen() {
           onPress={handleSubmit}
           disabled={loading}
         >
-          <Text style={styles.submitButtonText}>
-            {loading ? 'Creando Usuario...' : 'Crear Usuario'}
-          </Text>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator color="white" size="small" />
+              <Text style={styles.submitButtonText}>Creando Usuario...</Text>
+            </View>
+          ) : (
+            <View style={styles.buttonContent}>
+              <Ionicons name="checkmark-circle" size={20} color="white" />
+              <Text style={styles.submitButtonText}>Crear Usuario</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -197,10 +236,24 @@ const styles = StyleSheet.create({
   formContainer: {
     padding: 16,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginLeft: 8,
+    color: '#333',
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 8,
     color: '#333',
   },
   input: {
@@ -209,17 +262,15 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
     borderRadius: 8,
     padding: 12,
-    marginBottom: 16,
     fontSize: 16,
+  },
+  textArea: {
+    minHeight: 80,
+    paddingTop: 12,
+    paddingBottom: 12,
   },
   folderSelectorContainer: {
     marginBottom: 16,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 8,
-    color: '#333',
   },
   infoBox: {
     backgroundColor: '#E3F2FD',
@@ -230,10 +281,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
   },
+  infoContent: {
+    marginLeft: 8,
+  },
+  infoTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    color: '#1976D2',
+  },
   infoText: {
     color: '#1976D2',
-    marginLeft: 8,
-    flex: 1,
     lineHeight: 20,
   },
   submitButton: {
@@ -241,13 +299,24 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
   submitButtonDisabled: {
     backgroundColor: '#ccc',
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   submitButtonText: {
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 });

@@ -10,7 +10,8 @@ import {
   TextInput,
   RefreshControl
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/authService';
 
@@ -37,6 +38,12 @@ export default function UsuariosScreen() {
   useEffect(() => {
     loadUsers();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadUsers();
+    }, [])
+  );
 
   useEffect(() => {
     filterUsers();
@@ -84,7 +91,7 @@ export default function UsuariosScreen() {
 
     Alert.alert(
       'Eliminar Usuario',
-      `¿Estás seguro de que quieres eliminar a ${user.nombres} ${user.apellidos}?`,
+      `¿Estás seguro de que quieres eliminar a ${user.nombres} ${user.apellidos}?\n\nEsta acción no se puede deshacer y el usuario perderá acceso a todas las carpetas asignadas.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -92,12 +99,13 @@ export default function UsuariosScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await authService.deleteUser(user._id);
+              await authService.deleteUser(user.cedula);
               Alert.alert('Éxito', 'Usuario eliminado correctamente');
               loadUsers(); // Recargar lista
             } catch (error: any) {
               console.error('Error eliminando usuario:', error);
-              Alert.alert('Error', 'No se pudo eliminar el usuario');
+              const errorMessage = error.response?.data?.msg || 'No se pudo eliminar el usuario';
+              Alert.alert('Error', errorMessage);
             }
           }
         }
@@ -106,7 +114,7 @@ export default function UsuariosScreen() {
   };
 
   const handleEditUser = (user: User) => {
-    navigation.navigate('EditarUsuario', { userId: user._id });
+    navigation.navigate('EditarUsuario', { cedula: user.cedula });
   };
 
   const navigateTo = (screen: string) => {
@@ -232,7 +240,10 @@ export default function UsuariosScreen() {
                   style={[styles.actionButton, styles.editButton]}
                   onPress={() => handleEditUser(user)}
                 >
-                  <Text style={styles.actionButtonText}>✏️</Text>
+                  <View style={styles.actionButtonContent}>
+                    <Ionicons name="create" size={16} color="white" />
+                    <Text style={styles.actionButtonText}>Editar</Text>
+                  </View>
                 </TouchableOpacity>
                 
                 {user._id !== currentUser?._id && (
@@ -240,7 +251,10 @@ export default function UsuariosScreen() {
                     style={[styles.actionButton, styles.deleteButton]}
                     onPress={() => handleDeleteUser(user)}
                   >
-                    <Text style={styles.actionButtonText}>🗑️</Text>
+                    <View style={styles.actionButtonContent}>
+                      <Ionicons name="trash" size={16} color="white" />
+                      <Text style={styles.actionButtonText}>Eliminar</Text>
+                    </View>
                   </TouchableOpacity>
                 )}
               </View>
@@ -450,12 +464,19 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   actionButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 80,
+    height: 36,
+    borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
     marginLeft: 8,
+    flexDirection: 'row',
+    paddingHorizontal: 8,
+  },
+  actionButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   editButton: {
     backgroundColor: '#f39c12',
@@ -464,7 +485,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#e74c3c',
   },
   actionButtonText: {
-    fontSize: 16,
+    fontSize: 12,
+    color: 'white',
+    marginLeft: 4,
+    fontWeight: '600',
   },
   floatingButton: {
     position: 'absolute',

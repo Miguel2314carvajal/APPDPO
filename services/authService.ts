@@ -1,6 +1,16 @@
 import api from './api';
 import { LoginCredentials, RegisterUserData, AuthResponse } from '../types';
 
+export interface UpdateUserData {
+  nombres?: string;
+  apellidos?: string;
+  email?: string;
+  telefono?: string;
+  direccion?: string;
+  rol?: string;
+  carpetaId?: string;
+}
+
 export const authService = {
   // Login de usuario
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
@@ -58,10 +68,30 @@ export const authService = {
     }
   },
 
-  // Eliminar usuario (solo admin)
-  deleteUser: async (userId: string): Promise<any> => {
+  // Obtener usuario específico por cédula
+  getUserByCedula: async (cedula: string): Promise<any> => {
     try {
-      const response = await api.delete(`/users/eliminar/${userId}`);
+      const response = await api.get(`/users/cedula/${cedula}`);
+      return response.data;
+    } catch (error: any) {
+      throw error.response?.data || { mensaje: 'Error al obtener usuario' };
+    }
+  },
+
+  // Actualizar usuario (solo admin)
+  updateUser: async (cedula: string, userData: UpdateUserData): Promise<any> => {
+    try {
+      const response = await api.put(`/users/actualizar/${cedula}`, userData);
+      return response.data;
+    } catch (error: any) {
+      throw error.response?.data || { mensaje: 'Error al actualizar usuario' };
+    }
+  },
+
+  // Eliminar usuario (solo admin)
+  deleteUser: async (cedula: string): Promise<any> => {
+    try {
+      const response = await api.delete(`/users/eliminar/${cedula}`);
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { mensaje: 'Error al eliminar usuario' };
