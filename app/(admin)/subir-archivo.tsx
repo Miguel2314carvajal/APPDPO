@@ -286,6 +286,9 @@ export default function SubirArchivoScreen() {
                   <Text style={styles.folderStats}>
                     📄 {folder.files?.length || 0} archivos
                   </Text>
+                  <Text style={styles.folderUploadHint}>
+                    💡 Puedes subir múltiples archivos aquí
+                  </Text>
                 </View>
                 <TouchableOpacity 
                   style={styles.uploadToFolderButton}
@@ -294,7 +297,10 @@ export default function SubirArchivoScreen() {
                     setShowUploadModal(true);
                   }}
                 >
-                  <Text style={styles.uploadToFolderText}>📤</Text>
+                  <View style={styles.uploadButtonContent}>
+                    <Text style={styles.uploadToFolderText}>📤</Text>
+                    <Text style={styles.uploadButtonLabel}>Subir</Text>
+                  </View>
                 </TouchableOpacity>
               </View>
               
@@ -321,6 +327,20 @@ export default function SubirArchivoScreen() {
                       </View>
                     </View>
                   ))}
+                  
+                  {/* Botón para agregar más archivos */}
+                  <TouchableOpacity 
+                    style={styles.addMoreFilesButton}
+                    onPress={() => {
+                      setFileData(prev => ({ ...prev, carpetaId: folder._id }));
+                      setShowUploadModal(true);
+                    }}
+                  >
+                    <View style={styles.addMoreButtonContent}>
+                      <Text style={styles.addMoreIcon}>➕</Text>
+                      <Text style={styles.addMoreFilesText}>Agregar más archivos</Text>
+                    </View>
+                  </TouchableOpacity>
                 </View>
               ) : (
                 <View style={styles.noFilesContainer}>
@@ -332,8 +352,14 @@ export default function SubirArchivoScreen() {
                       setShowUploadModal(true);
                     }}
                   >
-                    <Text style={styles.uploadHereText}>Subir primer archivo</Text>
+                    <View style={styles.uploadHereButtonContent}>
+                      <Text style={styles.uploadHereIcon}>📤</Text>
+                      <Text style={styles.uploadHereText}>Subir primer archivo</Text>
+                    </View>
                   </TouchableOpacity>
+                  <Text style={styles.uploadHintText}>
+                    💡 Después podrás agregar más archivos aquí
+                  </Text>
                 </View>
               )}
             </View>
@@ -351,6 +377,14 @@ export default function SubirArchivoScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>📤 Subir Nuevo Archivo</Text>
+            
+            {/* Información importante */}
+            <View style={styles.infoBox}>
+              <Text style={styles.infoText}>
+                💡 <Text style={styles.infoBold}>Puedes subir múltiples archivos</Text> a la misma carpeta.{'\n'}
+                Cada archivo se guardará por separado y podrás acceder a todos.
+              </Text>
+            </View>
             
             {/* Seleccionar carpeta */}
             <Text style={styles.inputLabel}>Seleccionar carpeta</Text>
@@ -598,14 +632,31 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#95a5a6',
   },
+  folderUploadHint: {
+    fontSize: 12,
+    color: '#7f8c8d',
+    marginTop: 8,
+    textAlign: 'center',
+  },
   uploadToFolderButton: {
     padding: 8,
     backgroundColor: '#27ae60',
     borderRadius: 8,
   },
+  uploadButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   uploadToFolderText: {
     fontSize: 20,
     color: 'white',
+    marginRight: 8,
+  },
+  uploadButtonLabel: {
+    fontSize: 16,
+    color: 'white',
+    fontWeight: '600',
   },
   filesContainer: {
     borderTopWidth: 1,
@@ -666,9 +717,47 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 6,
   },
+  uploadHereButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  uploadHereIcon: {
+    fontSize: 20,
+    marginRight: 8,
+  },
   uploadHereText: {
     color: 'white',
     fontSize: 14,
+    fontWeight: '600',
+  },
+  uploadHintText: {
+    fontSize: 12,
+    color: '#7f8c8d',
+    marginTop: 10,
+    textAlign: 'center',
+  },
+  addMoreFilesButton: {
+    backgroundColor: '#3498db',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 16,
+    borderWidth: 2,
+    borderColor: '#2980b9',
+  },
+  addMoreButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addMoreIcon: {
+    fontSize: 20,
+    marginRight: 8,
+  },
+  addMoreFilesText: {
+    fontSize: 14,
+    color: 'white',
     fontWeight: '600',
   },
   modalOverlay: {
@@ -811,5 +900,21 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  infoBox: {
+    backgroundColor: '#e0f2f7',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#cce5ff',
+  },
+  infoText: {
+    fontSize: 14,
+    color: '#343a40',
+    lineHeight: 20,
+  },
+  infoBold: {
+    fontWeight: 'bold',
   },
 });
