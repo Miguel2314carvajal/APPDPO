@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, RefreshControl } from 'react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/authService';
 import { folderService } from '../../services/folderService';
@@ -11,35 +11,75 @@ interface DashboardStats {
   totalUsers: number;
   totalFolders: number;
   totalFiles: number;
+  adminUsers: number;
+  regularUsers: number;
   recentUsers: any[];
 }
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats>({ totalUsers: 0, totalFolders: 0, totalFiles: 0, recentUsers: [] });
+  const [stats, setStats] = useState<DashboardStats>({ 
+    totalUsers: 0, 
+    totalFolders: 0, 
+    totalFiles: 0, 
+    adminUsers: 0,
+    regularUsers: 0,
+    recentUsers: [] 
+  });
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   
   const { user, logout } = useAuth();
   const navigation = useNavigation();
 
-  useEffect(() => {
-    loadDashboardData();
-  }, []);
+  // Cargar datos cuando la pantalla se enfoca
+  useFocusEffect(
+    React.useCallback(() => {
+      loadDashboardData();
+    }, [])
+  );
 
   const loadDashboardData = async () => {
     try {
+      console.log('🔄 Cargando datos del dashboard...');
       setIsLoading(true);
+      
       const [users, folders] = await Promise.all([
         authService.listUsers(),
         folderService.listFolders()
       ]);
-      const totalFiles = folders.reduce((acc, folder) => acc + folder.files.length, 0);
-      setStats({ totalUsers: users.length, totalFolders: folders.length, totalFiles, recentUsers: users.slice(0, 5) });
+      
+      console.log('📊 Usuarios encontrados:', users.length);
+      console.log('📁 Carpetas encontradas:', folders.length);
+      
+      // Calcular estadísticas más precisas
+      const totalFiles = folders.reduce((acc, folder) => acc + (folder.files?.length || 0), 0);
+      const adminUsers = users.filter(user => user.rol === 'admin').length;
+      const regularUsers = users.filter(user => user.rol === 'usuario').length;
+      
+      const newStats = {
+        totalUsers: users.length,
+        totalFolders: folders.length,
+        totalFiles,
+        adminUsers,
+        regularUsers,
+        recentUsers: users.slice(0, 5)
+      };
+      
+      console.log('📈 Estadísticas calculadas:', newStats);
+      setStats(newStats);
+      
     } catch (error: any) {
-      console.error('Error cargando dashboard:', error);
+      console.error('❌ Error cargando dashboard:', error);
       Alert.alert('Error', 'No se pudieron cargar las estadísticas');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const refreshDashboard = async () => {
+    setIsRefreshing(true);
+    await loadDashboardData();
+    setIsRefreshing(false);
   };
 
   const handleLogout = async () => {
@@ -78,36 +118,47 @@ export default function AdminDashboard() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={isRefreshing} onRefresh={refreshDashboard} />
+      }
+    >
       {/* Header */}
       <View style={styles.header}>
-        <View>
+        <View style={styles.headerContent}>
           <Text style={styles.welcomeText}>¡Bienvenido, Administrador!</Text>
           <Text style={styles.userInfo}>
             {user?.nombres} {user?.apellidos}
           </Text>
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>🚪</Text>
+          <Ionicons name="log-out-outline" size={18} color="white" />
+          <Text style={styles.logoutText}>Cerrar</Text>
         </TouchableOpacity>
       </View>
 
       {/* Estadísticas */}
       <View style={styles.statsContainer}>
-        <Text style={styles.sectionTitle}>📊 Estadísticas del Sistema</Text>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>📊 Estadísticas del Sistema</Text>
+        </View>
         
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
+            <Ionicons name="people" size={24} color="#007AFF" />
             <Text style={styles.statNumber}>{stats.totalUsers}</Text>
-            <Text style={styles.statLabel}>Usuarios</Text>
+            <Text style={styles.statLabel}>Total Usuarios</Text>
           </View>
           
           <View style={styles.statCard}>
+            <Ionicons name="folder" size={24} color="#34C759" />
             <Text style={styles.statNumber}>{stats.totalFolders}</Text>
             <Text style={styles.statLabel}>Carpetas</Text>
           </View>
           
           <View style={styles.statCard}>
+            <Ionicons name="document" size={24} color="#FF9500" />
             <Text style={styles.statNumber}>{stats.totalFiles}</Text>
             <Text style={styles.statLabel}>Archivos</Text>
           </View>
@@ -117,8 +168,7 @@ export default function AdminDashboard() {
       {/* Acciones Rápidas */}
       <View style={styles.quickActionsSection}>
         <View style={styles.sectionHeader}>
-          <Ionicons name="flash" size={20} color="#FFD700" />
-          <Text style={styles.sectionTitle}>Acciones Rápidas</Text>
+          <Text style={styles.sectionTitle}>⚡ Acciones Rápidas</Text>
         </View>
         
         <View style={styles.quickActionsGrid}>
@@ -148,22 +198,22 @@ export default function AdminDashboard() {
         </View>
       </View>
 
-      {/* Navegación Principal */}
+      {/* Solo el botón de Gestión de Usuarios */}
       <View style={styles.navigationContainer}>
-        <Text style={styles.sectionTitle}>🧭 Navegación Principal</Text>
-        
         <TouchableOpacity 
           style={styles.navButton} 
           onPress={() => navigateTo('Usuarios')}
         >
-          <Text style={styles.navIcon}>👥</Text>
+          <View style={styles.navIconContainer}>
+            <Ionicons name="people" size={24} color="#007AFF" />
+          </View>
           <View style={styles.navContent}>
             <Text style={styles.navTitle}>Gestión de Usuarios</Text>
             <Text style={styles.navDescription}>
               Crear, editar y eliminar usuarios del sistema
             </Text>
           </View>
-          <Text style={styles.navArrow}>→</Text>
+          <Ionicons name="chevron-forward" size={20} color="#95a5a6" />
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -191,25 +241,44 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 20,
+    paddingTop: 40,
+    paddingBottom: 25,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#e9ecef',
   },
+  headerContent: {
+    flex: 1,
+  },
   welcomeText: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '700',
     color: '#2c3e50',
+    marginBottom: 4,
   },
   userInfo: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#7f8c8d',
-    marginTop: 4,
+    fontWeight: '500',
   },
   logoutButton: {
-    padding: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e74c3c',
+    paddingVertical: 9,
+    paddingHorizontal: 14,
+    borderRadius: 9,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
   },
   logoutText: {
-    fontSize: 24,
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '600',
+    marginLeft: 7,
   },
   statsContainer: {
     padding: 20,
@@ -223,168 +292,43 @@ const styles = StyleSheet.create({
   statsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: 12,
   },
   statCard: {
     flex: 1,
     backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
-    marginHorizontal: 4,
+    padding: 20,
+    borderRadius: 16,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowRadius: 6,
+    elevation: 6,
   },
   statNumber: {
     fontSize: 28,
     fontWeight: 'bold',
     color: '#3498db',
+    marginTop: 8,
   },
   statLabel: {
     fontSize: 14,
     color: '#7f8c8d',
-    marginTop: 4,
-  },
-  actionsContainer: {
-    padding: 20,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  actionButton: {
-    flex: 1,
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
-    marginHorizontal: 4,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  primaryAction: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#3498db',
-  },
-  secondaryAction: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#27ae60',
-  },
-  tertiaryAction: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#e74c3c',
-  },
-  actionIcon: {
-    fontSize: 24,
-    marginBottom: 8,
-  },
-  actionText: {
-    fontSize: 12,
+    marginTop: 8,
     fontWeight: '600',
-    color: '#2c3e50',
-    textAlign: 'center',
-  },
-  navigationContainer: {
-    padding: 20,
-  },
-  navButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  navIcon: {
-    fontSize: 24,
-    marginRight: 16,
-  },
-  navContent: {
-    flex: 1,
-  },
-  navTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2c3e50',
-  },
-  navDescription: {
-    fontSize: 14,
-    color: '#7f8c8d',
-    marginTop: 2,
-  },
-  navArrow: {
-    fontSize: 18,
-    color: '#bdc3c7',
-  },
-  recentUsersContainer: {
-    padding: 20,
-    paddingBottom: 40,
-  },
-  userCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  userAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#3498db',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 16,
-  },
-  userInitial: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  userInfo: {
-    flex: 1,
-  },
-  userName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2c3e50',
-  },
-  userEmail: {
-    fontSize: 14,
-    color: '#7f8c8d',
-    marginTop: 2,
-  },
-  userRole: {
-    fontSize: 12,
-    color: '#95a5a6',
-    marginTop: 2,
   },
   quickActionsSection: {
     padding: 20,
     backgroundColor: 'white',
-    borderRadius: 12,
+    borderRadius: 16,
+    marginHorizontal: 20,
     marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -394,35 +338,77 @@ const styles = StyleSheet.create({
   quickActionsGrid: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: 12,
   },
   actionButton: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: 20,
+    paddingHorizontal: 12,
     borderRadius: 12,
-    marginHorizontal: 4,
+    backgroundColor: 'white',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowRadius: 6,
+    elevation: 6,
   },
   blueBorder: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#007AFF',
+    borderTopWidth: 3,
+    borderTopColor: '#007AFF',
   },
   greenBorder: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#34C759',
+    borderTopWidth: 3,
+    borderTopColor: '#34C759',
   },
   redBorder: {
-    borderLeftWidth: 4,
-    borderLeftColor: '#FF3B30',
+    borderTopWidth: 3,
+    borderTopColor: '#FF3B30',
   },
   actionButtonText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: '#2c3e50',
-    marginTop: 8,
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  navigationContainer: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  navButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 6,
+  },
+  navIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#f8f9fa',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  navContent: {
+    flex: 1,
+  },
+  navTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 4,
+  },
+  navDescription: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    lineHeight: 20,
   },
 });

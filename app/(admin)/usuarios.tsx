@@ -36,6 +36,14 @@ export default function UsuariosScreen() {
   const { user: currentUser } = useAuth();
   const navigation = useNavigation();
 
+  // Calcular estadísticas
+  const stats = {
+    total: users.length,
+    admins: users.filter(u => u.rol === 'admin').length,
+    regularUsers: users.filter(u => u.rol === 'usuario').length,
+    withFolders: users.filter(u => u.folders && u.folders.length > 0).length
+  };
+
   useEffect(() => {
     loadUsers();
   }, []);
@@ -52,11 +60,13 @@ export default function UsuariosScreen() {
 
   const loadUsers = async () => {
     try {
+      console.log('🔄 Cargando usuarios...');
       setIsLoading(true);
       const response = await authService.listUsers();
+      console.log('✅ Usuarios cargados:', response.length);
       setUsers(response);
     } catch (error: any) {
-      console.error('Error cargando usuarios:', error);
+      console.error('❌ Error cargando usuarios:', error);
       Alert.alert('Error', 'No se pudieron cargar los usuarios');
     } finally {
       setIsLoading(false);
@@ -140,141 +150,177 @@ export default function UsuariosScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={
+        <RefreshControl refreshing={isRefreshing} onRefresh={refreshUsers} />
+      }
+    >
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity 
           style={styles.backButton} 
           onPress={() => navigation.goBack()}
         >
-          <Text style={styles.backButtonText}>←</Text>
+          <Ionicons name="arrow-back" size={24} color="#007AFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>👥 Gestión de Usuarios</Text>
+        <View style={styles.headerInfo}>
+          <Text style={styles.headerTitle}>Gestión de Usuarios</Text>
+          <Text style={styles.headerSubtitle}>Administra los usuarios del sistema</Text>
+        </View>
         <TouchableOpacity 
-          style={styles.addButton} 
-          onPress={() => navigateTo('NuevoUsuario')}
+          style={styles.addButton}
+          onPress={() => navigation.navigate('NuevoUsuario')}
         >
-          <Text style={styles.addButtonText}>+</Text>
+          <Ionicons name="add" size={24} color="white" />
         </TouchableOpacity>
-      </View>
-
-      {/* Barra de búsqueda */}
-      <View style={styles.searchContainer}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="🔍 Buscar usuarios..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          placeholderTextColor="#95a5a6"
-        />
       </View>
 
       {/* Estadísticas */}
       <View style={styles.statsContainer}>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>{users.length}</Text>
-          <Text style={styles.statLabel}>Total</Text>
+        <View style={styles.statsGrid}>
+          <View style={styles.statCard}>
+            <Ionicons name="people" size={20} color="#007AFF" />
+            <Text style={styles.statNumber}>{stats.total}</Text>
+            <Text style={styles.statLabel}>Total</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Ionicons name="shield" size={20} color="#E74C3C" />
+            <Text style={styles.statNumber}>{stats.admins}</Text>
+            <Text style={styles.statLabel}>Admins</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Ionicons name="person" size={20} color="#3498db" />
+            <Text style={styles.statNumber}>{stats.regularUsers}</Text>
+            <Text style={styles.statLabel}>Usuarios</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Ionicons name="folder" size={20} color="#27ae60" />
+            <Text style={styles.statNumber}>{stats.withFolders}</Text>
+            <Text style={styles.statLabel}>Con Carpetas</Text>
+          </View>
         </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>
-            {users.filter(u => u.rol === 'admin').length}
-          </Text>
-          <Text style={styles.statLabel}>Admins</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>
-            {users.filter(u => u.rol === 'user').length}
-          </Text>
-          <Text style={styles.statLabel}>Usuarios</Text>
+      </View>
+
+      {/* Barra de búsqueda */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchBox}>
+          <Ionicons name="search" size={20} color="#95a5a6" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar usuarios..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor="#95a5a6"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
+              <Ionicons name="close-circle" size={20} color="#95a5a6" />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
       {/* Lista de usuarios */}
-      <ScrollView 
-        style={styles.usersList}
-        refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={refreshUsers} />
-        }
-      >
+      <View style={styles.usersContainer}>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="list" size={20} color="#2c3e50" />
+          <Text style={styles.sectionTitle}>
+            Usuarios ({filteredUsers.length})
+          </Text>
+        </View>
+        
         {filteredUsers.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateIcon}>👥</Text>
-            <Text style={styles.emptyStateTitle}>No hay usuarios</Text>
+            <Ionicons name="people-outline" size={64} color="#bdc3c7" />
+            <Text style={styles.emptyStateTitle}>
+              {searchQuery ? 'No se encontraron usuarios' : 'No hay usuarios'}
+            </Text>
             <Text style={styles.emptyStateText}>
-              {searchQuery ? 'No se encontraron usuarios con esa búsqueda' : 'Comienza creando el primer usuario'}
+              {searchQuery 
+                ? 'Intenta con otros términos de búsqueda'
+                : 'Crea el primer usuario del sistema'
+              }
             </Text>
             {!searchQuery && (
               <TouchableOpacity 
-                style={styles.emptyStateButton}
-                onPress={() => navigateTo('NuevoUsuario')}
+                style={styles.createFirstUserButton}
+                onPress={() => navigation.navigate('NuevoUsuario')}
               >
-                <Text style={styles.emptyStateButtonText}>Crear Usuario</Text>
+                <Ionicons name="add" size={20} color="white" />
+                <Text style={styles.createFirstUserText}>Crear Usuario</Text>
               </TouchableOpacity>
             )}
           </View>
         ) : (
-          filteredUsers.map((user) => (
-            <View key={user._id} style={styles.userCard}>
-              <View style={styles.userInfo}>
+          <View style={styles.usersList}>
+            {filteredUsers.map((user) => (
+              <View key={user._id} style={styles.userCard}>
                 <View style={styles.userAvatar}>
                   <Text style={styles.userInitial}>
-                    {user.nombres?.[0] || 'U'}
+                    {user.nombres?.charAt(0) || user.email?.charAt(0) || '?'}
                   </Text>
                 </View>
-                <View style={styles.userDetails}>
+                
+                <View style={styles.userInfo}>
                   <Text style={styles.userName}>
                     {user.nombres} {user.apellidos}
                   </Text>
                   <Text style={styles.userEmail}>{user.email}</Text>
                   <Text style={styles.userPhone}>{user.telefono}</Text>
-                  <Text style={styles.userRole}>
-                    {user.rol === 'admin' ? '👑 Administrador' : '👤 Usuario'}
-                  </Text>
-                  <Text style={styles.userFolders}>
-                    📁 {user.folders?.length || 0} carpeta{(user.folders?.length || 0) !== 1 ? 's' : ''} asignada{(user.folders?.length || 0) !== 1 ? 's' : ''}
-                  </Text>
-                  <Text style={styles.userDate}>
-                    Creado: {formatDate(user.createdAt)}
+                  
+                  <View style={styles.userDetails}>
+                    <View style={styles.userRoleContainer}>
+                      <Ionicons 
+                        name={user.rol === 'admin' ? 'shield' : 'person'} 
+                        size={14} 
+                        color={user.rol === 'admin' ? '#E74C3C' : '#3498db'} 
+                      />
+                      <Text style={[
+                        styles.userRole,
+                        { color: user.rol === 'admin' ? '#E74C3C' : '#3498db' }
+                      ]}>
+                        {user.rol === 'admin' ? 'Administrador' : 'Usuario'}
+                      </Text>
+                    </View>
+                    
+                    <View style={styles.userFoldersContainer}>
+                      <Ionicons name="folder" size={14} color="#27ae60" />
+                      <Text style={styles.userFolders}>
+                        {user.folders?.length || 0} carpeta{(user.folders?.length || 0) !== 1 ? 's' : ''} asignada{(user.folders?.length || 0) !== 1 ? 's' : ''}
+                      </Text>
+                    </View>
+                  </View>
+                  
+                  <Text style={styles.userCreated}>
+                    Creado: {new Date(user.createdAt).toLocaleDateString('es-ES')}
                   </Text>
                 </View>
-              </View>
-              
-              <View style={styles.userActions}>
-                <TouchableOpacity 
-                  style={[styles.actionButton, styles.editButton]}
-                  onPress={() => handleEditUser(user)}
-                >
-                  <View style={styles.actionButtonContent}>
+                
+                <View style={styles.userActions}>
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.editButton]}
+                    onPress={() => handleEditUser(user)}
+                  >
                     <Ionicons name="create" size={16} color="white" />
                     <Text style={styles.actionButtonText}>Editar</Text>
-                  </View>
-                </TouchableOpacity>
-                
-                {user._id !== currentUser?._id && (
-                  <TouchableOpacity 
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
                     style={[styles.actionButton, styles.deleteButton]}
                     onPress={() => handleDeleteUser(user)}
+                    disabled={user._id === currentUser?._id}
                   >
-                    <View style={styles.actionButtonContent}>
-                      <Ionicons name="trash" size={16} color="white" />
-                      <Text style={styles.actionButtonText}>Eliminar</Text>
-                    </View>
+                    <Ionicons name="trash" size={16} color="white" />
+                    <Text style={styles.actionButtonText}>Eliminar</Text>
                   </TouchableOpacity>
-                )}
+                </View>
               </View>
-            </View>
-          ))
+            ))}
+          </View>
         )}
-      </ScrollView>
-
-      {/* Botón flotante */}
-      <TouchableOpacity 
-        style={styles.floatingButton}
-        onPress={() => navigateTo('NuevoUsuario')}
-      >
-        <Text style={styles.floatingButtonText}>+</Text>
-      </TouchableOpacity>
-    </View>
+      </View>
+    </ScrollView>
   );
 }
 
@@ -306,14 +352,19 @@ const styles = StyleSheet.create({
   backButton: {
     padding: 8,
   },
-  backButtonText: {
-    fontSize: 24,
-    color: '#3498db',
+  headerInfo: {
+    flex: 1,
+    marginLeft: 10,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#2c3e50',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    marginTop: 2,
   },
   addButton: {
     width: 40,
@@ -323,35 +374,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  addButtonText: {
-    fontSize: 24,
-    color: 'white',
-    fontWeight: 'bold',
-  },
-  searchContainer: {
-    padding: 20,
-    paddingTop: 16,
-  },
-  searchInput: {
-    backgroundColor: 'white',
-    padding: 12,
-    borderRadius: 8,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
   statsContainer: {
-    flexDirection: 'row',
     paddingHorizontal: 20,
     marginBottom: 16,
   },
-  statItem: {
-    flex: 1,
-    alignItems: 'center',
+  statsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+  },
+  statCard: {
+    width: '48%', // Two columns
     backgroundColor: 'white',
-    padding: 12,
-    marginHorizontal: 4,
-    borderRadius: 8,
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    marginBottom: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -359,49 +397,57 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   statNumber: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
     color: '#3498db',
+    marginTop: 8,
   },
   statLabel: {
     fontSize: 12,
     color: '#7f8c8d',
     marginTop: 4,
   },
-  usersList: {
+  searchContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  searchInput: {
     flex: 1,
+    fontSize: 16,
+    color: '#333',
+  },
+  clearButton: {
+    padding: 4,
+  },
+  usersContainer: {
     paddingHorizontal: 20,
   },
-  emptyState: {
+  sectionHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 40,
+    marginBottom: 12,
   },
-  emptyStateIcon: {
-    fontSize: 48,
-    marginBottom: 16,
-  },
-  emptyStateTitle: {
+  sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#2c3e50',
-    marginBottom: 8,
+    marginLeft: 8,
   },
-  emptyStateText: {
-    fontSize: 14,
-    color: '#7f8c8d',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  emptyStateButton: {
-    backgroundColor: '#3498db',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  emptyStateButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
+  usersList: {
+    // No specific styles needed here, items are handled by userCard
   },
   userCard: {
     backgroundColor: 'white',
@@ -415,11 +461,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
     elevation: 5,
-  },
-  userInfo: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   userAvatar: {
     width: 50,
@@ -435,7 +476,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
   },
-  userDetails: {
+  userInfo: {
     flex: 1,
   },
   userName: {
@@ -454,19 +495,34 @@ const styles = StyleSheet.create({
     color: '#7f8c8d',
     marginBottom: 2,
   },
+  userDetails: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 4,
+  },
+  userRoleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 2,
+  },
   userRole: {
     fontSize: 12,
-    color: '#95a5a6',
-    marginBottom: 2,
+    marginLeft: 4,
+  },
+  userFoldersContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
   },
   userFolders: {
     fontSize: 12,
     color: '#7f8c8d',
-    marginBottom: 2,
+    marginLeft: 4,
   },
-  userDate: {
+  userCreated: {
     fontSize: 12,
     color: '#bdc3c7',
+    marginTop: 4,
   },
   userActions: {
     flexDirection: 'row',
@@ -499,25 +555,50 @@ const styles = StyleSheet.create({
     marginLeft: 4,
     fontWeight: '600',
   },
-  floatingButton: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#3498db',
-    justifyContent: 'center',
+  emptyState: {
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
+    padding: 40,
   },
-  floatingButtonText: {
-    fontSize: 24,
-    color: 'white',
+  emptyStateIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
     fontWeight: 'bold',
+    color: '#2c3e50',
+    marginBottom: 8,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  emptyStateButton: {
+    backgroundColor: '#3498db',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  emptyStateButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  createFirstUserButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#3498db',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  createFirstUserText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });

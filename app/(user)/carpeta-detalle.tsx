@@ -8,10 +8,13 @@ import {
   Alert,
   ActivityIndicator,
   Linking,
-  RefreshControl
+  RefreshControl,
+  PermissionsAndroid,
+  Platform
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import RNFS from 'react-native-fs';
 import { folderService } from '../../services/folderService';
 import { fileService } from '../../services/fileService';
 
@@ -71,59 +74,6 @@ export default function CarpetaDetalle() {
     setIsRefreshing(false);
   };
 
-  const downloadFile = async (file: File) => {
-    try {
-      console.log('📥 Intentando abrir archivo:', file.name);
-      console.log('🔗 URL del archivo:', file.url);
-      
-      // Verificar si el archivo tiene URL
-      if (!file.url) {
-        Alert.alert('Error', 'El archivo no tiene una URL válida');
-        return;
-      }
-
-      // Mostrar indicador de carga
-      Alert.alert(
-        'Abriendo archivo',
-        `¿Deseas abrir "${file.name}"?`,
-        [
-          { text: 'Cancelar', style: 'cancel' },
-          {
-            text: 'Abrir',
-            onPress: async () => {
-              try {
-                // Verificar si la URL es válida
-                const supported = await Linking.canOpenURL(file.url);
-                
-                if (supported) {
-                  console.log('✅ URL soportada, abriendo archivo...');
-                  await Linking.openURL(file.url);
-                } else {
-                  console.log('❌ URL no soportada');
-                  Alert.alert(
-                    'No se puede abrir',
-                    `No se puede abrir este tipo de archivo (${file.tipo || 'desconocido'}).\n\nURL: ${file.url}`,
-                    [{ text: 'OK' }]
-                  );
-                }
-              } catch (openError) {
-                console.error('❌ Error abriendo archivo:', openError);
-                Alert.alert(
-                  'Error',
-                  'No se pudo abrir el archivo. Verifica que tengas una aplicación compatible instalada.',
-                  [{ text: 'OK' }]
-                );
-              }
-            }
-          }
-        ]
-      );
-    } catch (error) {
-      console.error('❌ Error en downloadFile:', error);
-      Alert.alert('Error', 'No se pudo procesar el archivo');
-    }
-  };
-
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -141,6 +91,204 @@ export default function CarpetaDetalle() {
     if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return '📊';
     if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return '📈';
     return '📎';
+  };
+
+  const requestStoragePermission = async () => {
+    if (Platform.OS === 'android') {
+      try {
+        console.log('🔐 Solicitando permisos de almacenamiento...');
+        
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.WRITE_EXTERNAL_STORAGE,
+          {
+            title: "📁 Permiso de Almacenamiento",
+            message: "Para descargar archivos a tu dispositivo, necesitamos acceso al almacenamiento. Esto te permitirá guardar archivos en tu carpeta de Descargas.",
+            buttonNeutral: "Preguntar más tarde",
+            buttonNegative: "Cancelar",
+            buttonPositive: "Permitir"
+          }
+        );
+        
+        console.log('📋 Resultado del permiso:', granted);
+        
+        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+          console.log('✅ Permisos concedidos');
+          return true;
+        } else if (granted === PermissionsAndroid.RESULTS.DENIED) {
+          console.log('❌ Permisos denegados');
+          Alert.alert(
+            'Permisos Denegados',
+            'Para descargar archivos, necesitas dar permisos de almacenamiento a la aplicación.',
+            [
+              { text: 'Cancelar', style: 'cancel' },
+              {
+                text: 'Ir a Configuración',
+                onPress: () => {
+                  // Intentar abrir la configuración de la app
+                  Linking.openSettings().catch(() => {
+                    Alert.alert(
+                      'Configuración',
+                      'Ve a Configuración > Aplicaciones > AuditoriasApp > Permisos > Almacenamiento'
+                    );
+                  });
+                }
+              }
+            ]
+          );
+          return false;
+        } else if (granted === PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN) {
+          console.log('🚫 Permisos bloqueados permanentemente');
+          Alert.alert(
+            'Permisos Bloqueados',
+            'Has bloqueado permanentemente los permisos de almacenamiento. Para descargar archivos, debes habilitarlos manualmente en la configuración.',
+            [
+              { text: 'Cancelar', style: 'cancel' },
+              {
+                text: 'Ir a Configuración',
+                onPress: () => {
+                  // Intentar abrir la configuración de la app
+                  Linking.openSettings().catch(() => {
+                    Alert.alert(
+                      'Configuración Manual',
+                      'Sigue estos pasos:\n\n1. Ve a Configuración\n2. Aplicaciones\n3. AuditoriasApp\n4. Permisos\n5. Almacenamiento\n6. Activa el interruptor'
+                    );
+                  });
+                }
+              }
+            ]
+          );
+          return false;
+        } else {
+          console.log('⏰ Permisos pospuestos');
+          return false;
+        }
+      } catch (err) {
+        console.error('❌ Error solicitando permisos:', err);
+        return false;
+      }
+    }
+    return true; // iOS no necesita este permiso
+  };
+
+  const downloadFile = async (file: File) => {
+    try {
+      console.log('📥 Descargando archivo:', file.name);
+      console.log('🔗 URL del archivo:', file.url);
+      
+      // Verificar si el archivo tiene URL
+      if (!file.url) {
+        Alert.alert('Error', 'El archivo no tiene una URL válida');
+        return;
+      }
+
+      // Solicitar permisos de almacenamiento
+      const hasPermission = await requestStoragePermission();
+      if (!hasPermission) {
+        Alert.alert('Error', 'Se requieren permisos de almacenamiento para descargar archivos');
+        return;
+      }
+
+      // Obtener la extensión del archivo
+      const fileExtension = file.name.split('.').pop() || 'pdf';
+      const fileName = file.name || `archivo_${Date.now()}.${fileExtension}`;
+      
+      // Definir la ruta de descarga
+      const downloadPath = Platform.OS === 'ios' 
+        ? `${RNFS.DocumentDirectoryPath}/${fileName}`
+        : `${RNFS.DownloadDirectoryPath}/${fileName}`;
+
+      console.log('📁 Ruta de descarga:', downloadPath);
+
+      // Mostrar indicador de descarga
+      Alert.alert(
+        'Descargando archivo',
+        `¿Deseas descargar "${file.name}" a tu dispositivo?`,
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Descargar',
+            onPress: async () => {
+              try {
+                // Iniciar descarga
+                const response = await RNFS.downloadFile({
+                  fromUrl: file.url,
+                  toFile: downloadPath,
+                  background: true,
+                  discretionary: true,
+                  progress: (res) => {
+                    const progressPercent = (res.bytesWritten / res.contentLength) * 100;
+                    console.log(`📊 Progreso: ${progressPercent.toFixed(1)}%`);
+                  },
+                  progressDivider: 1
+                }).promise;
+
+                if (response.statusCode === 200) {
+                  console.log('✅ Archivo descargado exitosamente');
+                  Alert.alert(
+                    '¡Descarga completada!',
+                    `El archivo "${file.name}" se ha descargado exitosamente a tu dispositivo.`,
+                    [
+                      {
+                        text: 'Abrir archivo',
+                        onPress: () => openFile(file)
+                      },
+                      { text: 'OK' }
+                    ]
+                  );
+                } else {
+                  throw new Error(`Error en descarga: ${response.statusCode}`);
+                }
+              } catch (downloadError) {
+                console.error('❌ Error descargando archivo:', downloadError);
+                Alert.alert(
+                  'Error',
+                  'No se pudo descargar el archivo. Verifica tu conexión a internet.',
+                  [{ text: 'OK' }]
+                );
+              }
+            }
+          }
+        ]
+      );
+    } catch (error) {
+      console.error('❌ Error en downloadFile:', error);
+      Alert.alert('Error', 'No se pudo procesar la descarga');
+    }
+  };
+
+  const openFile = async (file: File) => {
+    try {
+      console.log('📂 Abriendo archivo:', file.name);
+      console.log('🔗 URL del archivo:', file.url);
+      
+      // Verificar si el archivo tiene URL
+      if (!file.url) {
+        Alert.alert('Error', 'El archivo no tiene una URL válida');
+        return;
+      }
+
+      // Verificar si la URL es válida
+      const supported = await Linking.canOpenURL(file.url);
+      
+      if (supported) {
+        console.log('✅ URL soportada, abriendo archivo...');
+        await Linking.openURL(file.url);
+      } else {
+        console.log('❌ URL no soportada');
+        Alert.alert(
+          'No se puede abrir',
+          `No se puede abrir este tipo de archivo (${file.tipo || 'desconocido'}).\n\nURL: ${file.url}`,
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (error) {
+      console.error('❌ Error abriendo archivo:', error);
+      Alert.alert(
+        'Error',
+        'No se pudo abrir el archivo. Verifica que tengas una aplicación compatible instalada.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   if (isLoading) {
@@ -217,37 +365,49 @@ export default function CarpetaDetalle() {
         ) : (
           <View style={styles.filesList}>
             {folder.files.map((file) => (
-              <TouchableOpacity
-                key={file._id}
-                style={styles.fileCard}
-                onPress={() => downloadFile(file)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.fileIcon}>
-                  <Text style={styles.fileIconText}>{getFileIcon(file.mimeType)}</Text>
-                </View>
-                
-                <View style={styles.fileInfo}>
-                  <Text style={styles.fileName} numberOfLines={2}>
-                    {file.name}
-                  </Text>
-                  {file.description && (
-                    <Text style={styles.fileDescription} numberOfLines={1}>
-                      {file.description}
-                    </Text>
-                  )}
-                  <Text style={styles.fileDetails}>
-                    {file.tipo} • {formatFileSize(file.size || 0)} • {new Date(file.createdAt).toLocaleDateString('es-ES')}
-                  </Text>
-                </View>
-                
+              <View key={file._id} style={styles.fileCard}>
                 <TouchableOpacity
-                  style={styles.downloadButton}
-                  onPress={() => downloadFile(file)}
+                  style={styles.fileInfoContainer}
+                  onPress={() => openFile(file)}
+                  activeOpacity={0.7}
                 >
-                  <Ionicons name="download" size={20} color="#3498db" />
+                  <View style={styles.fileIcon}>
+                    <Text style={styles.fileIconText}>{getFileIcon(file.mimeType)}</Text>
+                  </View>
+                  
+                  <View style={styles.fileInfo}>
+                    <Text style={styles.fileName} numberOfLines={2}>
+                      {file.name}
+                    </Text>
+                    {file.description && (
+                      <Text style={styles.fileDescription} numberOfLines={1}>
+                        {file.description}
+                      </Text>
+                    )}
+                    <Text style={styles.fileDetails}>
+                      {file.tipo} • {formatFileSize(file.size || 0)} • {new Date(file.createdAt).toLocaleDateString('es-ES')}
+                    </Text>
+                  </View>
                 </TouchableOpacity>
-              </TouchableOpacity>
+                
+                <View style={styles.fileActions}>
+                  <TouchableOpacity
+                    style={styles.actionButton}
+                    onPress={() => openFile(file)}
+                  >
+                    <Ionicons name="eye" size={18} color="#3498db" />
+                    <Text style={styles.actionButtonText}>Abrir</Text>
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={[styles.actionButton, styles.downloadButton]}
+                    onPress={() => downloadFile(file)}
+                  >
+                    <Ionicons name="download" size={18} color="#27ae60" />
+                    <Text style={[styles.actionButtonText, styles.downloadButtonText]}>Descargar</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
             ))}
           </View>
         )}
@@ -399,6 +559,11 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
+  fileInfoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
   fileIcon: {
     width: 50,
     height: 50,
@@ -429,7 +594,31 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#95a5a6',
   },
+  fileActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  actionButtonText: {
+    marginLeft: 4,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#495057',
+  },
   downloadButton: {
-    padding: 8,
+    backgroundColor: '#d4edda',
+    borderColor: '#c3e6cb',
+  },
+  downloadButtonText: {
+    color: '#155724',
   },
 });
