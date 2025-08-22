@@ -9,9 +9,11 @@ import {
   ActivityIndicator,
   TextInput,
   Modal,
-  RefreshControl
+  RefreshControl,
+  SafeAreaView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { folderService } from '../../services/folderService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -117,138 +119,171 @@ export default function CarpetasScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backButtonText}>←</Text>
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>📁 Gestión de Carpetas</Text>
-        <TouchableOpacity 
-          style={styles.addButton} 
-          onPress={() => setShowCreateModal(true)}
-        >
-          <Text style={styles.addButtonText}>+</Text>
-        </TouchableOpacity>
-      </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#007AFF" />
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Ionicons name="folder" size={24} color="#FFD700" />
+            <Text style={styles.headerTitle}>Gestión de Carpetas</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.addButton} 
+            onPress={() => setShowCreateModal(true)}
+          >
+            <Ionicons name="add" size={24} color="white" />
+          </TouchableOpacity>
+        </View>
 
-      {/* Estadísticas */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>{folders.length}</Text>
-          <Text style={styles.statLabel}>Total</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>
-            {folders.reduce((total, folder) => total + (folder.files?.length || 0), 0)}
-          </Text>
-          <Text style={styles.statLabel}>Archivos</Text>
-        </View>
-        <View style={styles.statItem}>
-          <Text style={styles.statNumber}>
-            {folders.reduce((total, folder) => total + (folder.usuarios?.length || 0), 0)}
-          </Text>
-          <Text style={styles.statLabel}>Asignaciones</Text>
-        </View>
-      </View>
-
-      {/* Lista de carpetas */}
-      <ScrollView 
-        style={styles.foldersList}
-        refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={refreshData} />
-        }
-      >
-        {folders.map((folder) => (
-          <View key={folder._id} style={styles.folderCard}>
-            <View style={styles.folderHeader}>
-              <Text style={styles.folderName}>{folder.name}</Text>
-              <Text style={styles.folderDescription}>Carpeta de archivos</Text>
+        {/* Estadísticas */}
+        <View style={styles.statsContainer}>
+          <View style={styles.statItem}>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="folder" size={20} color="#007AFF" />
             </View>
-            
-            <View style={styles.folderInfo}>
-              <Text style={styles.folderDate}>
-                📅 Creada: {new Date(folder.createdAt).toLocaleDateString('es-ES')}
-              </Text>
-              <View style={styles.folderStats}>
-                <Text style={styles.folderStat}>
-                  📄 {folder.files?.length || 0} archivos
-                </Text>
-                <Text style={styles.folderStat}>
-                  👥 {folder.usuarios?.length || 0} usuarios
-                </Text>
+            <Text style={styles.statNumber}>{folders.length}</Text>
+            <Text style={styles.statLabel}>Total</Text>
+          </View>
+          <View style={styles.statItem}>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="document" size={20} color="#34C759" />
+            </View>
+            <Text style={styles.statNumber}>
+              {folders.reduce((total, folder) => total + (folder.files?.length || 0), 0)}
+            </Text>
+            <Text style={styles.statLabel}>Archivos</Text>
+          </View>
+          <View style={styles.statItem}>
+            <View style={styles.statIconContainer}>
+              <Ionicons name="people" size={20} color="#FF9500" />
+            </View>
+            <Text style={styles.statNumber}>
+              {folders.reduce((total, folder) => total + (folder.usuarios?.length || 0), 0)}
+            </Text>
+            <Text style={styles.statLabel}>Asignaciones</Text>
+          </View>
+        </View>
+
+        {/* Lista de carpetas */}
+        <ScrollView 
+          style={styles.foldersList}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={refreshData} />
+          }
+          showsVerticalScrollIndicator={false}
+        >
+          {folders.map((folder) => (
+            <View key={folder._id} style={styles.folderCard}>
+              <View style={styles.folderHeader}>
+                <Text style={styles.folderName}>{folder.name}</Text>
+                <Text style={styles.folderDescription}>Carpeta de archivos</Text>
+              </View>
+              
+              <View style={styles.folderInfo}>
+                <View style={styles.folderDateContainer}>
+                  <Ionicons name="calendar" size={16} color="#95a5a6" />
+                  <Text style={styles.folderDate}>
+                    Creada: {new Date(folder.createdAt).toLocaleDateString('es-ES')}
+                  </Text>
+                </View>
+                <View style={styles.folderStatsRow}>
+                  <View style={styles.folderStats}>
+                    <View style={styles.folderStat}>
+                      <Ionicons name="document" size={16} color="#95a5a6" />
+                      <Text style={styles.folderStatText}>
+                        {folder.files?.length || 0} archivos
+                      </Text>
+                    </View>
+                    <View style={styles.folderStat}>
+                      <Ionicons name="people" size={16} color="#95a5a6" />
+                      <Text style={styles.folderStatText}>
+                        {folder.usuarios?.length || 0} usuarios
+                      </Text>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.folderActions}>
+                    <TouchableOpacity 
+                      style={[styles.actionButton, styles.editButton]}
+                      onPress={() => Alert.alert('Próximamente', 'Edición de carpetas estará disponible pronto')}
+                    >
+                      <Ionicons name="create" size={18} color="white" />
+                    </TouchableOpacity>
+                    
+                    <TouchableOpacity 
+                      style={[styles.actionButton, styles.deleteButton]}
+                      onPress={() => handleDeleteFolder(folder)}
+                    >
+                      <Ionicons name="trash" size={18} color="white" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
               </View>
             </View>
-            
-            <View style={styles.folderActions}>
-              <TouchableOpacity 
-                style={[styles.actionButton, styles.editButton]}
-                onPress={() => Alert.alert('Próximamente', 'Edición de carpetas estará disponible pronto')}
-              >
-                <Text style={styles.actionButtonText}>✏️</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={[styles.actionButton, styles.deleteButton]}
-                onPress={() => handleDeleteFolder(folder)}
-              >
-                <Text style={styles.actionButtonText}>🗑️</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
+          ))}
+        </ScrollView>
 
-      {/* Modal para crear carpeta */}
-      <Modal
-        visible={showCreateModal}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setShowCreateModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>📁 Crear Nueva Carpeta</Text>
-            
-            <Text style={styles.inputLabel}>Nombre de la carpeta</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ej: Documentos Básicos"
-              value={newFolder.name}
-              onChangeText={(text) => setNewFolder(prev => ({ ...prev, name: text }))}
-            />
-            
-            <Text style={styles.inputLabel}>Descripción</Text>
-            <Text style={styles.descriptionText}>
-              Esta carpeta se creará para almacenar archivos relacionados con "{newFolder.name}"
-            </Text>
-            
-            <View style={styles.modalActions}>
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.cancelButton]}
-                onPress={() => setShowCreateModal(false)}
-              >
-                <Text style={styles.cancelButtonText}>Cancelar</Text>
-              </TouchableOpacity>
+        {/* Modal para crear carpeta */}
+        <Modal
+          visible={showCreateModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowCreateModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Ionicons name="folder" size={24} color="#007AFF" />
+                <Text style={styles.modalTitle}>Crear Nueva Carpeta</Text>
+              </View>
               
-              <TouchableOpacity 
-                style={[styles.modalButton, styles.createButton]}
-                onPress={handleCreateFolder}
-              >
-                <Text style={styles.createButtonText}>Crear Carpeta</Text>
-              </TouchableOpacity>
+              <Text style={styles.inputLabel}>Nombre de la carpeta</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ej: Documentos Básicos"
+                value={newFolder.name}
+                onChangeText={(text) => setNewFolder(prev => ({ ...prev, name: text }))}
+              />
+              
+              <Text style={styles.inputLabel}>Descripción</Text>
+              <Text style={styles.descriptionText}>
+                Esta carpeta se creará para almacenar archivos relacionados con "{newFolder.name}"
+              </Text>
+              
+              <View style={styles.modalActions}>
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => setShowCreateModal(false)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancelar</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.createButton]}
+                  onPress={handleCreateFolder}
+                >
+                  <Text style={styles.createButtonText}>Crear Carpeta</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
-      </Modal>
-    </View>
+        </Modal>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
@@ -268,30 +303,52 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingTop: 50,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#e9ecef',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
   backButton: {
-    padding: 8,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#f8f9fa',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  backButtonText: {
-    fontSize: 24,
-    color: '#3498db',
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#2c3e50',
+    marginLeft: 12,
   },
   addButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: '#27ae60',
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 6,
   },
   addButtonText: {
     fontSize: 24,
@@ -301,75 +358,119 @@ const styles = StyleSheet.create({
   statsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    padding: 20,
+    padding: 24,
     backgroundColor: 'white',
-    marginBottom: 20,
+    marginTop: 32,
+    marginBottom: 24,
+    marginHorizontal: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 6,
   },
   statItem: {
     alignItems: 'center',
+    flex: 1,
+    paddingHorizontal: 8,
+  },
+  statIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#f8f9fa',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   statNumber: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#3498db',
-    marginBottom: 4,
+    color: '#2c3e50',
+    marginBottom: 6,
   },
   statLabel: {
     fontSize: 14,
     color: '#7f8c8d',
+    fontWeight: '600',
+    textAlign: 'center',
   },
   foldersList: {
     flex: 1,
     paddingHorizontal: 20,
+    paddingBottom: 24,
   },
   folderCard: {
     backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 18,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowRadius: 6,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: '#f8f9fa',
   },
   folderHeader: {
-    marginBottom: 12,
+    marginBottom: 16,
   },
   folderName: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#2c3e50',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   folderDescription: {
     fontSize: 14,
     color: '#7f8c8d',
+    fontStyle: 'italic',
   },
   folderInfo: {
+    marginBottom: 16,
+  },
+  folderDateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     marginBottom: 12,
   },
   folderDate: {
     fontSize: 14,
     color: '#95a5a6',
-    marginBottom: 8,
+    marginLeft: 8,
+    fontWeight: '500',
+  },
+  folderStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   folderStats: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 20,
   },
   folderStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  folderStatText: {
     fontSize: 14,
     color: '#95a5a6',
-    marginRight: 16,
+    marginLeft: 8,
+    fontWeight: '500',
   },
   folderActions: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#e9ecef',
-    paddingTop: 12,
+    alignItems: 'center',
+    gap: 10,
   },
   actionButton: {
     width: 40,
@@ -377,7 +478,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
   },
   editButton: {
     backgroundColor: '#f39c12',
@@ -390,53 +495,73 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
     backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 20,
+    padding: 28,
     margin: 20,
     maxHeight: '80%',
     width: '90%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+    justifyContent: 'center',
   },
   modalTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#2c3e50',
-    marginBottom: 20,
-    textAlign: 'center',
+    marginLeft: 12,
   },
   inputLabel: {
     fontSize: 16,
     fontWeight: '600',
     color: '#2c3e50',
-    marginBottom: 8,
-    marginTop: 16,
+    marginBottom: 10,
+    marginTop: 20,
   },
   input: {
     backgroundColor: '#f8f9fa',
     borderWidth: 1,
     borderColor: '#e9ecef',
-    borderRadius: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    borderRadius: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
     fontSize: 16,
     color: '#2c3e50',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 24,
+    marginTop: 28,
+    gap: 16,
   },
   modalButton: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    marginHorizontal: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
   },
   cancelButton: {
     backgroundColor: '#95a5a6',
@@ -457,7 +582,9 @@ const styles = StyleSheet.create({
   descriptionText: {
     fontSize: 14,
     color: '#7f8c8d',
-    marginTop: 8,
+    marginTop: 12,
     textAlign: 'center',
+    lineHeight: 20,
+    fontStyle: 'italic',
   },
 });
