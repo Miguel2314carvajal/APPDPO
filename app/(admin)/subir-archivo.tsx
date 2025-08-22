@@ -302,7 +302,7 @@ export default function SubirArchivoScreen() {
               </Text>
               <TouchableOpacity 
                 style={styles.emptyStateButton}
-                onPress={() => navigation.navigate('Carpetas')}
+                onPress={() => navigation.navigate('Carpetas' as never)}
               >
                 <Text style={styles.emptyStateButtonText}>Gestionar Carpetas</Text>
               </TouchableOpacity>
@@ -383,59 +383,65 @@ export default function SubirArchivoScreen() {
           visible={showUploadModal}
           animationType="slide"
           transparent={true}
-          onRequestClose={() => setShowUploadModal(false)}
+          onRequestClose={() => {
+            setShowUploadModal(false);
+            resetForm();
+          }}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>📤 Subir Nuevo Archivo</Text>
-              
-              {/* Seleccionar archivo */}
-              <Text style={[styles.inputLabel, styles.firstInputLabel]}>
-                Seleccionar archivo {selectedFile ? '✅' : '❌'}
-              </Text>
-              <TouchableOpacity 
-                style={styles.filePickerButton}
-                onPress={pickDocument}
-              >
-                <Text style={styles.filePickerText}>
-                  {selectedFile ? '📎 Cambiar archivo' : '📎 Seleccionar archivo'}
-                </Text>
-              </TouchableOpacity>
-              
-              {selectedFile && (
-                <View style={styles.selectedFileInfo}>
-                  <Text style={styles.selectedFileName}>
-                    📎 {selectedFile.name || 'Archivo seleccionado'}
+            <View style={styles.modalContainer}>
+              {/* Modal Header */}
+              <View style={styles.modalHeader}>
+                <Ionicons name="cloud-upload" size={24} color="#27ae60" />
+                <Text style={styles.modalTitle}>Subir Nuevo Archivo</Text>
+              </View>
+
+              {/* Scrollable Content */}
+              <ScrollView style={styles.modalScrollContent} showsVerticalScrollIndicator={false}>
+                {/* Seleccionar archivo */}
+                <Text style={[styles.inputLabel, styles.firstInputLabel]}>Seleccionar archivo</Text>
+                <TouchableOpacity
+                  style={styles.filePickerButton}
+                  onPress={pickDocument}
+                >
+                  <Text style={styles.filePickerText}>
+                    {selectedFile ? '📎 Cambiar archivo' : '📎 Seleccionar archivo'}
                   </Text>
-                  <Text style={styles.selectedFileSize}>
-                    Tamaño: {formatFileSize(selectedFile.size || 0)}
-                  </Text>
-                </View>
-              )}
-              
-              {/* Nombre del archivo */}
-              <Text style={styles.inputLabel}>Nombre del archivo</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Nombre personalizado del archivo"
-                value={fileData.nombre}
-                onChangeText={(text) => setFileData(prev => ({ ...prev, nombre: text }))}
-              />
-              
-              {/* Descripción */}
-              <Text style={styles.inputLabel}>Descripción</Text>
-              <TextInput
-                style={styles.textArea}
-                placeholder="Describe el contenido del archivo..."
-                value={fileData.descripcion}
-                onChangeText={(text) => setFileData(prev => ({ ...prev, descripcion: text }))}
-                multiline
-                numberOfLines={3}
-              />
-              
-              {/* Espacio extra antes de los botones */}
-              <View style={styles.modalBottomSpacer} />
-              
+                </TouchableOpacity>
+                
+                {selectedFile && (
+                  <View style={styles.selectedFileInfo}>
+                    <Text style={styles.selectedFileName}>
+                      📎 {selectedFile.name || 'Archivo seleccionado'}
+                    </Text>
+                    <Text style={styles.selectedFileSize}>
+                      Tamaño: {formatFileSize(selectedFile.size || 0)}
+                    </Text>
+                  </View>
+                )}
+                
+                {/* Nombre del archivo */}
+                <Text style={styles.inputLabel}>Nombre del archivo</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Nombre personalizado del archivo"
+                  value={fileData.nombre}
+                  onChangeText={(text) => setFileData(prev => ({ ...prev, nombre: text }))}
+                />
+                
+                {/* Descripción */}
+                <Text style={styles.inputLabel}>Descripción</Text>
+                <TextInput
+                  style={styles.textArea}
+                  placeholder="Describe el contenido del archivo..."
+                  value={fileData.descripcion}
+                  onChangeText={(text) => setFileData(prev => ({ ...prev, descripcion: text }))}
+                  multiline
+                  numberOfLines={3}
+                />
+              </ScrollView>
+
+              {/* Fixed Bottom Actions */}
               <View style={styles.modalActions}>
                 <TouchableOpacity 
                   style={[styles.modalButton, styles.cancelButton]}
@@ -765,26 +771,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  modalContent: {
+  modalContainer: {
     backgroundColor: 'white',
     borderRadius: 20,
-    padding: 28,
-    paddingBottom: 32,
     margin: 20,
-    maxHeight: '80%',
-    width: '90%',
+    padding: 24,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.25,
-    shadowRadius: 20,
+    shadowRadius: 10,
     elevation: 10,
+    flex: 1,
+    maxHeight: '80%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
   },
   modalTitle: {
     fontSize: 22,
     fontWeight: 'bold',
     color: '#2c3e50',
-    textAlign: 'center',
-    marginBottom: 28,
+    marginLeft: 10,
+  },
+  modalScrollContent: {
+    flex: 1,
   },
   inputLabel: {
     fontSize: 16,
@@ -846,14 +858,14 @@ const styles = StyleSheet.create({
     minHeight: 100,
     textAlignVertical: 'top',
   },
-  modalBottomSpacer: {
-    height: 20,
-  },
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 8,
+    marginTop: 20,
     gap: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e9ecef',
   },
   modalButton: {
     flex: 1,
