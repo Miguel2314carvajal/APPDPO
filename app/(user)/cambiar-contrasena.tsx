@@ -9,7 +9,8 @@ import {
   ActivityIndicator,
   ScrollView,
   KeyboardAvoidingView,
-  Platform
+  Platform,
+  SafeAreaView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -99,156 +100,161 @@ export default function CambiarContrasena() {
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton} 
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#3498db" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Cambiar Contraseña</Text>
-          <View style={styles.placeholder} />
-        </View>
-
-        {/* Información */}
-        <View style={styles.infoContainer}>
-          <View style={styles.infoCard}>
-            <Text style={styles.infoTitle}>🔐 Cambiar Contraseña</Text>
-            <Text style={styles.infoText}>
-              Cambia tu contraseña temporal por una nueva contraseña segura que puedas recordar fácilmente.
-            </Text>
-          </View>
-        </View>
-
-        {/* Formulario */}
-        <View style={styles.formContainer}>
-          {/* Contraseña actual */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Contraseña Actual *</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={styles.passwordInput}
-                placeholder="Ingresa tu contraseña actual"
-                value={currentPassword}
-                onChangeText={setCurrentPassword}
-                secureTextEntry={!showCurrentPassword}
-                placeholderTextColor="#999"
-              />
-              <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={() => setShowCurrentPassword(!showCurrentPassword)}
-              >
-                <Ionicons 
-                  name={showCurrentPassword ? "eye-off" : "eye"} 
-                  size={20} 
-                  color="#666" 
-                />
-              </TouchableOpacity>
-            </View>
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView 
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity 
+              style={styles.backButton} 
+              onPress={() => navigation.goBack()}
+            >
+              <Ionicons name="arrow-back" size={24} color="#3498db" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Cambiar Contraseña</Text>
+            <View style={styles.placeholder} />
           </View>
 
-          {/* Nueva contraseña */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Nueva Contraseña *</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={styles.passwordInput}
-                placeholder="Ingresa tu nueva contraseña"
-                value={newPassword}
-                onChangeText={setNewPassword}
-                secureTextEntry={!showNewPassword}
-                placeholderTextColor="#999"
-              />
-              <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={() => setShowNewPassword(!showNewPassword)}
-              >
-                <Ionicons 
-                  name={showNewPassword ? "eye-off" : "eye"} 
-                  size={20} 
-                  color="#666" 
-                />
-              </TouchableOpacity>
-            </View>
-            {newPassword && (
-              <Text style={[
-                styles.passwordHint,
-                validatePassword(newPassword) ? styles.passwordError : styles.passwordSuccess
-              ]}>
-                {validatePassword(newPassword) || '✓ Contraseña válida'}
+          {/* Información */}
+          <View style={styles.infoContainer}>
+            <View style={styles.infoCard}>
+              <View style={styles.infoHeader}>
+                <Ionicons name="lock-closed" size={24} color="#f39c12" />
+                <Text style={styles.infoTitle}>Cambiar Contraseña</Text>
+              </View>
+              <Text style={styles.infoText}>
+                Cambia tu contraseña temporal por una nueva contraseña segura que puedas recordar fácilmente.
               </Text>
-            )}
-          </View>
-
-          {/* Confirmar nueva contraseña */}
-          <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Confirmar Nueva Contraseña *</Text>
-            <View style={styles.passwordContainer}>
-              <TextInput
-                style={styles.passwordInput}
-                placeholder="Confirma tu nueva contraseña"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                secureTextEntry={!showConfirmPassword}
-                placeholderTextColor="#999"
-              />
-              <TouchableOpacity
-                style={styles.eyeButton}
-                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-              >
-                <Ionicons 
-                  name={showConfirmPassword ? "eye-off" : "eye"} 
-                  size={20} 
-                  color="#666" 
-                />
-              </TouchableOpacity>
             </View>
-            {confirmPassword && (
-              <Text style={[
-                styles.passwordHint,
-                newPassword !== confirmPassword ? styles.passwordError : styles.passwordSuccess
-              ]}>
-                {newPassword !== confirmPassword ? '✗ Las contraseñas no coinciden' : '✓ Contraseñas coinciden'}
-              </Text>
-            )}
           </View>
 
-          {/* Requisitos de contraseña */}
-          <View style={styles.requirementsContainer}>
-            <Text style={styles.requirementsTitle}>Requisitos de la contraseña:</Text>
-            <Text style={styles.requirement}>• Mínimo 6 caracteres</Text>
-            <Text style={styles.requirement}>• Al menos una letra mayúscula</Text>
-            <Text style={styles.requirement}>• Al menos una letra minúscula</Text>
-            <Text style={styles.requirement}>• Al menos un número</Text>
-          </View>
+          {/* Formulario */}
+          <View style={styles.formContainer}>
+            {/* Contraseña actual */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Contraseña Actual *</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Ingresa tu contraseña actual"
+                  value={currentPassword}
+                  onChangeText={setCurrentPassword}
+                  secureTextEntry={!showCurrentPassword}
+                  placeholderTextColor="#999"
+                />
+                <TouchableOpacity
+                  style={styles.eyeButton}
+                  onPress={() => setShowCurrentPassword(!showCurrentPassword)}
+                >
+                  <Ionicons 
+                    name={showCurrentPassword ? "eye-off" : "eye"} 
+                    size={20} 
+                    color="#666" 
+                  />
+                </TouchableOpacity>
+              </View>
+            </View>
 
-          {/* Botón de cambio */}
-          <TouchableOpacity
-            style={[
-              styles.changeButton,
-              isLoading && styles.changeButtonDisabled
-            ]}
-            onPress={handleChangePassword}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator size="small" color="white" />
-            ) : (
-              <>
-                <Ionicons name="key" size={20} color="white" />
-                <Text style={styles.changeButtonText}>Cambiar Contraseña</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+            {/* Nueva contraseña */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Nueva Contraseña *</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Ingresa tu nueva contraseña"
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  secureTextEntry={!showNewPassword}
+                  placeholderTextColor="#999"
+                />
+                <TouchableOpacity
+                  style={styles.eyeButton}
+                  onPress={() => setShowNewPassword(!showNewPassword)}
+                >
+                  <Ionicons 
+                    name={showNewPassword ? "eye-off" : "eye"} 
+                    size={20} 
+                    color="#666" 
+                  />
+                </TouchableOpacity>
+              </View>
+              {newPassword && (
+                <Text style={[
+                  styles.passwordHint,
+                  validatePassword(newPassword) ? styles.passwordError : styles.passwordSuccess
+                ]}>
+                  {validatePassword(newPassword) || '✓ Contraseña válida'}
+                </Text>
+              )}
+            </View>
+
+            {/* Confirmar nueva contraseña */}
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Confirmar Nueva Contraseña *</Text>
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  style={styles.passwordInput}
+                  placeholder="Confirma tu nueva contraseña"
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPassword}
+                  placeholderTextColor="#999"
+                />
+                <TouchableOpacity
+                  style={styles.eyeButton}
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  <Ionicons 
+                    name={showConfirmPassword ? "eye-off" : "eye"} 
+                    size={20} 
+                    color="#666" 
+                  />
+                </TouchableOpacity>
+              </View>
+              {confirmPassword && (
+                <Text style={[
+                  styles.passwordHint,
+                  newPassword !== confirmPassword ? styles.passwordError : styles.passwordSuccess
+                ]}>
+                  {newPassword !== confirmPassword ? '✗ Las contraseñas no coinciden' : '✓ Contraseñas coinciden'}
+                </Text>
+              )}
+            </View>
+
+            {/* Requisitos de contraseña */}
+            <View style={styles.requirementsContainer}>
+              <Text style={styles.requirementsTitle}>Requisitos de la contraseña:</Text>
+              <Text style={styles.requirement}>• Mínimo 6 caracteres</Text>
+              <Text style={styles.requirement}>• Al menos una letra mayúscula</Text>
+              <Text style={styles.requirement}>• Al menos una letra minúscula</Text>
+              <Text style={styles.requirement}>• Al menos un número</Text>
+            </View>
+
+            {/* Botón de cambio */}
+            <TouchableOpacity
+              style={[
+                styles.changeButton,
+                isLoading && styles.changeButtonDisabled
+              ]}
+              onPress={handleChangePassword}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : (
+                <>
+                  <Ionicons name="key" size={20} color="white" />
+                  <Text style={styles.changeButtonText}>Cambiar Contraseña</Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -264,16 +270,30 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingTop: 50,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#e9ecef',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
   backButton: {
-    padding: 4,
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#f8f9fa',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#2c3e50',
   },
@@ -282,22 +302,30 @@ const styles = StyleSheet.create({
   },
   infoContainer: {
     padding: 20,
+    marginTop: 10,
   },
   infoCard: {
     backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
+    padding: 20,
+    borderRadius: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowRadius: 6,
+    elevation: 6,
+    borderWidth: 1,
+    borderColor: '#f8f9fa',
+  },
+  infoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
   },
   infoTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#2c3e50',
-    marginBottom: 8,
+    marginLeft: 8,
   },
   infoText: {
     fontSize: 14,
@@ -307,6 +335,7 @@ const styles = StyleSheet.create({
   formContainer: {
     padding: 20,
     paddingBottom: 40,
+    marginTop: 0,
   },
   inputContainer: {
     marginBottom: 20,
@@ -350,7 +379,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f9fa',
     padding: 16,
     borderRadius: 8,
-    marginBottom: 24,
+    marginBottom: 0,
   },
   requirementsTitle: {
     fontSize: 14,
@@ -370,6 +399,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: 16,
     borderRadius: 8,
+    marginTop: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

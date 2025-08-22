@@ -10,7 +10,8 @@ import {
   Linking,
   RefreshControl,
   PermissionsAndroid,
-  Platform
+  Platform,
+  SafeAreaView,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -83,14 +84,14 @@ export default function CarpetaDetalle() {
   };
 
   const getFileIcon = (mimeType: string) => {
-    if (mimeType.includes('pdf')) return '📄';
-    if (mimeType.includes('image')) return '🖼️';
-    if (mimeType.includes('video')) return '🎥';
-    if (mimeType.includes('audio')) return '🎵';
-    if (mimeType.includes('word') || mimeType.includes('document')) return '📝';
-    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return '📊';
-    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return '📈';
-    return '📎';
+    if (mimeType.includes('pdf')) return 'document-text';
+    if (mimeType.includes('image')) return 'image';
+    if (mimeType.includes('video')) return 'videocam';
+    if (mimeType.includes('audio')) return 'musical-notes';
+    if (mimeType.includes('word') || mimeType.includes('document')) return 'document';
+    if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'grid';
+    if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return 'easel';
+    return 'document';
   };
 
   const requestStoragePermission = async () => {
@@ -312,32 +313,36 @@ export default function CarpetaDetalle() {
   }
 
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={refreshFolder} />
-      }
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#3498db" />
-        </TouchableOpacity>
-        <View style={styles.headerInfo}>
-          <Text style={styles.folderName}>{folder.name}</Text>
-          <Text style={styles.fileCount}>
-            {folder.files?.length || 0} archivos
-          </Text>
+    <SafeAreaView style={styles.container}>
+      <ScrollView 
+        style={styles.container}
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={refreshFolder} />
+        }
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#3498db" />
+          </TouchableOpacity>
+          <View style={styles.headerInfo}>
+            <Text style={styles.folderName}>{folder.name}</Text>
+            <Text style={styles.fileCount}>
+              {folder.files?.length || 0} archivos
+            </Text>
+          </View>
         </View>
-      </View>
 
       {/* Información de la carpeta */}
       <View style={styles.folderInfo}>
         <View style={styles.infoCard}>
-          <Text style={styles.infoTitle}>📁 Información de la Carpeta</Text>
+          <View style={styles.infoHeader}>
+            <Ionicons name="folder" size={24} color="#f39c12" />
+            <Text style={styles.infoTitle}>Información de la Carpeta</Text>
+          </View>
           <Text style={styles.infoText}>
             <Text style={styles.infoLabel}>Creada:</Text> {new Date(folder.createdAt).toLocaleDateString('es-ES')}
           </Text>
@@ -352,11 +357,14 @@ export default function CarpetaDetalle() {
 
       {/* Lista de archivos */}
       <View style={styles.filesContainer}>
-        <Text style={styles.sectionTitle}>📎 Archivos</Text>
+        <View style={styles.sectionHeader}>
+          <Ionicons name="attach" size={20} color="#3498db" />
+          <Text style={styles.sectionTitle}>Archivos</Text>
+        </View>
         
         {!folder.files || folder.files.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyStateIcon}>📎</Text>
+            <Ionicons name="folder-open" size={48} color="#f39c12" />
             <Text style={styles.emptyStateTitle}>No hay archivos</Text>
             <Text style={styles.emptyStateText}>
               Esta carpeta no contiene archivos aún.
@@ -372,11 +380,11 @@ export default function CarpetaDetalle() {
                   activeOpacity={0.7}
                 >
                   <View style={styles.fileIcon}>
-                    <Text style={styles.fileIconText}>{getFileIcon(file.mimeType)}</Text>
+                    <Ionicons name={getFileIcon(file.mimeType)} size={24} color="#3498db" />
                   </View>
                   
                   <View style={styles.fileInfo}>
-                    <Text style={styles.fileName} numberOfLines={2}>
+                    <Text style={styles.fileName}>
                       {file.name}
                     </Text>
                     {file.description && (
@@ -398,14 +406,6 @@ export default function CarpetaDetalle() {
                     <Ionicons name="eye" size={18} color="#3498db" />
                     <Text style={styles.actionButtonText}>Abrir</Text>
                   </TouchableOpacity>
-                  
-                  <TouchableOpacity
-                    style={[styles.actionButton, styles.downloadButton]}
-                    onPress={() => downloadFile(file)}
-                  >
-                    <Ionicons name="download" size={18} color="#27ae60" />
-                    <Text style={[styles.actionButtonText, styles.downloadButtonText]}>Descargar</Text>
-                  </TouchableOpacity>
                 </View>
               </View>
             ))}
@@ -413,6 +413,7 @@ export default function CarpetaDetalle() {
         )}
       </View>
     </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -457,12 +458,27 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingTop: 50,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#e9ecef',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
   backButton: {
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#f8f9fa',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
     marginRight: 16,
   },
   headerInfo: {
@@ -491,11 +507,16 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
+  infoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   infoTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#2c3e50',
-    marginBottom: 12,
+    marginLeft: 8,
   },
   infoText: {
     fontSize: 14,
@@ -510,11 +531,16 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#2c3e50',
-    marginBottom: 16,
+    marginLeft: 8,
   },
   emptyState: {
     alignItems: 'center',
@@ -527,14 +553,11 @@ const styles = StyleSheet.create({
     shadowRadius: 3.84,
     elevation: 5,
   },
-  emptyStateIcon: {
-    fontSize: 48,
-    marginBottom: 16,
-  },
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#2c3e50',
+    marginTop: 16,
     marginBottom: 8,
     textAlign: 'center',
   },
@@ -548,21 +571,22 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   fileCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
-    padding: 16,
-    borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowRadius: 4,
+    elevation: 4,
   },
   fileInfoContainer: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    flex: 1,
   },
   fileIcon: {
     width: 50,
@@ -573,9 +597,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 16,
   },
-  fileIconText: {
-    fontSize: 24,
-  },
   fileInfo: {
     flex: 1,
   },
@@ -584,6 +605,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#2c3e50',
     marginBottom: 4,
+    flexWrap: 'wrap',
   },
   fileDescription: {
     fontSize: 14,
@@ -613,12 +635,5 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#495057',
-  },
-  downloadButton: {
-    backgroundColor: '#d4edda',
-    borderColor: '#c3e6cb',
-  },
-  downloadButtonText: {
-    color: '#155724',
   },
 });
