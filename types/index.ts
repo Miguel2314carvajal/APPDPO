@@ -38,6 +38,9 @@ export interface AuthResponse {
   rol: string;
   email: string;
   telefono: string;
+  direccion: string;
+  cedula: string;
+  folders: string[];
 }
 
 export interface LoginCredentials {

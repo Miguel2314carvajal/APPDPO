@@ -7,7 +7,8 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
-  RefreshControl
+  RefreshControl,
+  SafeAreaView,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,6 +36,14 @@ export default function UserDashboard() {
   useEffect(() => {
     loadUserFolders();
   }, []);
+
+  // Debug: Log user data
+  useEffect(() => {
+    if (user) {
+      console.log('👤 Usuario en dashboard:', user);
+      console.log('🏠 Dirección del usuario:', user.direccion);
+    }
+  }, [user]);
 
   const loadUserFolders = async () => {
     try {
@@ -151,85 +160,95 @@ export default function UserDashboard() {
   }
 
   return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={refreshFolders} />
-      }
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.welcomeText}>¡Bienvenido!</Text>
-          <Text style={styles.userInfo}>
-            {user?.nombres} {user?.apellidos}
-          </Text>
-          <Text style={styles.userRole}>👤 Usuario Regular</Text>
-        </View>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Text style={styles.logoutText}>🚪</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Información del usuario */}
-      <View style={styles.userInfoContainer}>
-        <Text style={styles.sectionTitle}>📋 Información Personal</Text>
-        <View style={styles.infoCard}>
-          <Text style={styles.infoLabel}>Email:</Text>
-          <Text style={styles.infoValue}>{user?.email}</Text>
-          
-          <Text style={styles.infoLabel}>Teléfono:</Text>
-          <Text style={styles.infoValue}>{user?.telefono}</Text>
-          
-          <Text style={styles.infoLabel}>Dirección:</Text>
-          <Text style={styles.infoValue}>{user?.direccion || 'No especificada'}</Text>
-          
-          {/* Botón para cambiar contraseña */}
-          <TouchableOpacity
-            style={styles.changePasswordButton}
-            onPress={() => navigation.navigate('CambiarContrasena')}
-          >
-            <Ionicons name="key" size={16} color="#3498db" />
-            <Text style={styles.changePasswordText}>Cambiar Contraseña</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      {/* Carpetas asignadas */}
-      <View style={styles.foldersContainer}>
-        <Text style={styles.sectionTitle}>📁 Tus Carpetas Asignadas</Text>
-        
-        {folders.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateIcon}>📁</Text>
-            <Text style={styles.emptyStateTitle}>No tienes carpetas asignadas</Text>
-            <Text style={styles.emptyStateText}>
-              El administrador aún no te ha asignado carpetas. Contacta al administrador del sistema.
+    <SafeAreaView style={styles.container}>
+      <ScrollView 
+        style={styles.container}
+        refreshControl={
+          <RefreshControl refreshing={isRefreshing} onRefresh={refreshFolders} />
+        }
+      >
+        {/* Header */}
+        <View style={styles.header}>
+          <View>
+            <Text style={styles.welcomeText}>¡Bienvenido!</Text>
+            <Text style={styles.userInfo}>
+              {user?.nombres} {user?.apellidos}
+            </Text>
+            <Text style={styles.userRole}>
+              <Ionicons name="person" size={14} color="#95a5a6" /> Usuario Regular
             </Text>
           </View>
-        ) : (
-          <View style={styles.foldersGrid}>
-            {folders.map((folder) => (
-              <TouchableOpacity
-                key={folder._id}
-                style={styles.folderCard}
-                onPress={() => openFolder(folder)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.folderIcon}>📁</Text>
-                <Text style={styles.folderName}>{folder.name}</Text>
-                <Text style={styles.folderFiles}>
-                  {folder.files?.length || 0} archivos
-                </Text>
-                <Text style={styles.folderDate}>
-                  {new Date(folder.createdAt).toLocaleDateString('es-ES')}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Ionicons name="log-out" size={24} color="white" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Información del usuario */}
+        <View style={styles.userInfoContainer}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="clipboard" size={20} color="#2c3e50" />
+            <Text style={styles.sectionTitle}>Información Personal</Text>
           </View>
-        )}
-      </View>
-    </ScrollView>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoLabel}>Email:</Text>
+            <Text style={styles.infoValue}>{user?.email}</Text>
+            
+            <Text style={styles.infoLabel}>Teléfono:</Text>
+            <Text style={styles.infoValue}>{user?.telefono}</Text>
+            
+            <Text style={styles.infoLabel}>Dirección:</Text>
+            <Text style={styles.infoValue}>{user?.direccion || 'No especificada'}</Text>
+            
+            {/* Botón para cambiar contraseña */}
+            <TouchableOpacity
+              style={styles.changePasswordButton}
+              onPress={() => navigation.navigate('CambiarContrasena')}
+            >
+              <Ionicons name="key" size={16} color="#3498db" />
+              <Text style={styles.changePasswordText}>Cambiar Contraseña</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Carpetas asignadas */}
+        <View style={styles.foldersContainer}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="folder" size={20} color="#2c3e50" />
+            <Text style={styles.sectionTitle}>Tus Carpetas Asignadas</Text>
+          </View>
+          
+          {folders.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="folder-outline" size={64} color="#bdc3c7" />
+              <Text style={styles.emptyStateTitle}>No tienes carpetas asignadas</Text>
+              <Text style={styles.emptyStateText}>
+                El administrador aún no te ha asignado carpetas. Contacta al administrador del sistema.
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.foldersGrid}>
+              {folders.map((folder) => (
+                <TouchableOpacity
+                  key={folder._id}
+                  style={styles.folderCard}
+                  onPress={() => openFolder(folder)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="folder" size={32} color="#f39c12" style={styles.folderIcon} />
+                  <Text style={styles.folderName}>{folder.name}</Text>
+                  <Text style={styles.folderFiles}>
+                    {folder.files?.length || 0} archivos
+                  </Text>
+                  <Text style={styles.folderDate}>
+                    {new Date(folder.createdAt).toLocaleDateString('es-ES')}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
@@ -253,10 +272,17 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    paddingTop: 50,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#e9ecef',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 4,
   },
   welcomeText: {
     fontSize: 24,
@@ -275,22 +301,31 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   logoutButton: {
-    padding: 12,
+    width: 44,
+    height: 44,
     backgroundColor: '#e74c3c',
-    borderRadius: 8,
-  },
-  logoutText: {
-    fontSize: 20,
-    color: 'white',
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
   },
   userInfoContainer: {
     padding: 20,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
     color: '#2c3e50',
-    marginBottom: 16,
+    marginLeft: 8,
   },
   infoCard: {
     backgroundColor: 'white',
@@ -325,19 +360,15 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  emptyStateIcon: {
-    fontSize: 48,
-    marginBottom: 16,
+    shadowRadius: 4,
+    elevation: 4,
   },
   emptyStateTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#2c3e50',
+    marginTop: 16,
     marginBottom: 8,
-    textAlign: 'center',
   },
   emptyStateText: {
     fontSize: 14,

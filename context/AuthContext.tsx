@@ -60,6 +60,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Llamar al backend real
       const response = await authService.login(credentials);
       console.log('✅ Respuesta del backend:', response);
+      console.log('📍 Dirección en respuesta:', response.direccion);
       
       // Usar los datos reales del backend
       const realUser: User = {
@@ -75,6 +76,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
+
+      console.log('🏠 Dirección en usuario creado:', realUser.direccion);
 
       const realToken = response.token;
       console.log('🔑 Token recibido:', realToken ? 'SÍ' : 'NO');
