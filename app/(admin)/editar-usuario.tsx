@@ -599,8 +599,4 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
 });

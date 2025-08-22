@@ -97,7 +97,7 @@ export const authService = {
     try {
       const response = await api.post(`/users/sincronizar-carpetas/${userId}`);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sincronizando carpetas:', error);
       throw error;
     }
@@ -111,7 +111,7 @@ export const authService = {
         newPassword
       });
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error cambiando contraseña:', error);
       throw error.response?.data || { mensaje: 'Error al cambiar contraseña' };
     }

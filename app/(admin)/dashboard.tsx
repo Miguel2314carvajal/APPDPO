@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/authService';
 import { folderService } from '../../services/folderService';
 import { fileService } from '../../services/fileService';
-import Ionicons from 'react-native-vector-icons/Ionicons';
+import { Ionicons } from '@expo/vector-icons';
 
 interface DashboardStats {
   totalUsers: number;
@@ -94,7 +94,7 @@ export default function AdminDashboard() {
           onPress: async () => {
             try {
               await logout();
-              navigation.navigate('Login');
+              (navigation as any).navigate('Login');
             } catch (error) {
               console.error('Error en logout:', error);
             }
@@ -105,7 +105,7 @@ export default function AdminDashboard() {
   };
 
   const navigateTo = (screen: string) => {
-    navigation.navigate(screen);
+    (navigation as any).navigate(screen);
   };
 
   if (isLoading) {

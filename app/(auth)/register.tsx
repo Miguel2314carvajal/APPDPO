@@ -71,7 +71,7 @@ export default function RegisterScreen() {
         [
           {
             text: 'OK',
-            onPress: () => router.replace('/(admin)')
+            onPress: () => (router as any).replace('/(admin)')
           }
         ]
       );

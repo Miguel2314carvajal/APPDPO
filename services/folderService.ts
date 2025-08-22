@@ -26,7 +26,7 @@ class FolderService {
     try {
       const response = await api.get('/folders/listar');
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error listando carpetas:', error);
       throw error;
     }
@@ -37,7 +37,7 @@ class FolderService {
     try {
       const response = await api.get(`/folders/${folderId}`);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error obteniendo carpeta:', error);
       throw error;
     }
@@ -50,7 +50,7 @@ class FolderService {
       const response = await api.post('/folders/crear', folderData);
       console.log('Respuesta del backend:', response.data);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error creando carpeta:', error);
       if (error.response) {
         console.error('Respuesta del error:', error.response.data);
@@ -65,7 +65,7 @@ class FolderService {
     try {
       const response = await api.put(`/folders/${folderId}`, folderData);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error actualizando carpeta:', error);
       throw error;
     }
@@ -75,7 +75,7 @@ class FolderService {
   async deleteFolder(folderId: string): Promise<void> {
     try {
       await api.delete(`/folders/${folderId}`);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error eliminando carpeta:', error);
       throw error;
     }
@@ -86,7 +86,7 @@ class FolderService {
     try {
       const response = await api.put(`/folders/${folderId}/usuarios`, { usuarios: userIds });
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error asignando usuarios a carpeta:', error);
       throw error;
     }
@@ -97,7 +97,7 @@ class FolderService {
     try {
       const response = await api.get(`/folders/usuario/${userId}`);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error obteniendo carpetas del usuario:', error);
       throw error;
     }

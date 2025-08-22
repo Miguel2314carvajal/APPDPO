@@ -59,7 +59,7 @@ export default function MultiFolderSelector({
       setFolders(foldersData);
       // Inicializar filteredFolders inmediatamente
       setFilteredFolders(foldersData);
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error cargando carpetas:', error);
       if (error.response) {
         console.error('📊 Respuesta del error:', error.response.data);

@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         telefono: response.telefono || '',
         email: response.email,
         direccion: response.direccion || '',
-        rol: response.rol,
+        rol: response.rol as 'user' | 'admin',
         folders: response.folders || [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -107,7 +107,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const mockUser: User = {
         _id: '2',
         ...userData,
-        rol: 'user',
+        rol: 'usuario' as 'user' | 'admin',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };

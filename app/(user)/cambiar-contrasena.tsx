@@ -86,7 +86,7 @@ export default function CambiarContrasena() {
             text: 'OK',
             onPress: async () => {
               await logout();
-              navigation.navigate('Login');
+              (navigation as any).navigate('Login');
             }
           }
         ]

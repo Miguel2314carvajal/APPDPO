@@ -58,9 +58,10 @@ class FileService {
       
       console.log('📋 FormData creado, enviando al backend...');
       console.log('📋 FormData entries:');
-      for (let [key, value] of formData.entries()) {
-        console.log(`  ${key}:`, value);
-      }
+      // FormData no tiene método entries() en React Native, usamos get() en su lugar
+      console.log('  name:', formData.get('name'));
+      console.log('  description:', formData.get('description'));
+      console.log('  folder:', formData.get('folder'));
       
       // Subir archivo
       const response = await api.post('/files/subir', formData, {
@@ -72,7 +73,7 @@ class FileService {
       
       console.log('✅ Archivo subido exitosamente:', response.data);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error subiendo archivo:', error);
       if (error.response) {
         console.error('📊 Respuesta del error:', error.response.data);
@@ -88,7 +89,7 @@ class FileService {
     try {
       const response = await api.get('/files/listar');
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error listando archivos:', error);
       throw error;
     }
@@ -99,7 +100,7 @@ class FileService {
     try {
       const response = await api.get(`/files/${fileId}`);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error obteniendo archivo:', error);
       throw error;
     }
@@ -110,7 +111,7 @@ class FileService {
     try {
       const response = await api.get(`/files/carpeta/${folderId}`);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error obteniendo archivos de carpeta:', error);
       throw error;
     }
@@ -121,7 +122,7 @@ class FileService {
     try {
       const response = await api.put(`/files/${fileId}`, fileData);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error actualizando archivo:', error);
       throw error;
     }
@@ -135,7 +136,7 @@ class FileService {
       const response = await api.delete(`/files/${fileId}`);
       
       console.log('✅ Archivo eliminado exitosamente:', response.data);
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error eliminando archivo:', error);
       throw error;
     }
@@ -146,7 +147,7 @@ class FileService {
     try {
       const response = await api.get(`/files/${fileId}/descargar`);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error descargando archivo:', error);
       throw error;
     }

@@ -41,10 +41,10 @@ export default function LoginScreen() {
       
       // Redirigir según el rol usando React Navigation
       if (response.rol === 'admin') {
-        navigation.navigate('AdminDashboard');
+        (navigation as any).navigate('AdminDashboard');
       } else {
         // Usuario regular va a su dashboard
-        navigation.navigate('UserDashboard');
+        (navigation as any).navigate('UserDashboard');
       }
       
     } catch (error: any) {

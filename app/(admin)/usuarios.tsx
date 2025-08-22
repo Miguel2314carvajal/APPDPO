@@ -15,17 +15,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/authService';
-
-interface User {
-  _id: string;
-  nombres: string;
-  apellidos: string;
-  email: string;
-  telefono: string;
-  rol: string;
-  createdAt: string;
-  folders?: string[]; // Added folders property
-}
+import { User } from '../../types';
 
 export default function UsuariosScreen() {
   const [users, setUsers] = useState<User[]>([]);
@@ -88,14 +78,9 @@ export default function UsuariosScreen() {
   };
 
   const handleDeleteUser = (user: User) => {
-    if (user._id === currentUser?._id) {
-      Alert.alert('Error', 'No puedes eliminar tu propia cuenta');
-      return;
-    }
-
     Alert.alert(
       'Eliminar Usuario',
-      `¿Estás seguro de que quieres eliminar a ${user.nombres} ${user.apellidos}?\n\nEsta acción no se puede deshacer y el usuario perderá acceso a todas las carpetas asignadas.`,
+      `¿Estás seguro de que quieres eliminar a ${user.nombres} ${user.apellidos}?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -118,11 +103,7 @@ export default function UsuariosScreen() {
   };
 
   const handleEditUser = (user: User) => {
-    navigation.navigate('EditarUsuario', { cedula: user.cedula });
-  };
-
-  const navigateTo = (screen: string) => {
-    navigation.navigate(screen);
+    (navigation as any).navigate('EditarUsuario', { cedula: user.cedula });
   };
 
   const formatDate = (dateString: string) => {
@@ -207,7 +188,7 @@ export default function UsuariosScreen() {
               {!searchQuery && (
                 <TouchableOpacity 
                   style={styles.createFirstUserButton}
-                  onPress={() => navigation.navigate('NuevoUsuario')}
+                  onPress={() => (navigation as any).navigate('NuevoUsuario')}
                 >
                   <Ionicons name="add" size={20} color="white" />
                   <Text style={styles.createFirstUserText}>Crear Usuario</Text>

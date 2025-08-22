@@ -79,7 +79,13 @@ export default function UserDashboard() {
         
         // Intentar sincronizar carpetas del usuario
         try {
-          const syncResult = await authService.syncUserFolders(user?._id);
+          if (!user?._id) {
+            console.log('⚠️ No se puede sincronizar: usuario sin ID');
+            setFolders([]);
+            return;
+          }
+          
+          const syncResult = await authService.syncUserFolders(user._id);
           console.log('🔄 Resultado de sincronización:', syncResult);
           
           if (syncResult.folders && syncResult.folders.length > 0) {
@@ -135,7 +141,7 @@ export default function UserDashboard() {
           onPress: async () => {
             try {
               await logout();
-              navigation.navigate('Login');
+              (navigation as any).navigate('Login');
             } catch (error) {
               console.error('Error en logout:', error);
             }
@@ -147,7 +153,7 @@ export default function UserDashboard() {
 
   const openFolder = (folder: Folder) => {
     // Navegar a la pantalla de detalle de carpeta
-    navigation.navigate('CarpetaDetalle', { folderId: folder._id });
+    (navigation as any).navigate('CarpetaDetalle', { folderId: folder._id });
   };
 
   if (isLoading) {
@@ -202,7 +208,7 @@ export default function UserDashboard() {
             {/* Botón para cambiar contraseña */}
             <TouchableOpacity
               style={styles.changePasswordButton}
-              onPress={() => navigation.navigate('CambiarContrasena')}
+              onPress={() => (navigation as any).navigate('CambiarContrasena')}
             >
               <Ionicons name="key" size={16} color="#3498db" />
               <Text style={styles.changePasswordText}>Cambiar Contraseña</Text>
