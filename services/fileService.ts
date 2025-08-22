@@ -127,12 +127,16 @@ class FileService {
     }
   }
 
-  // Eliminar archivo (también de Cloudinary)
+  // Eliminar archivo
   async deleteFile(fileId: string): Promise<void> {
     try {
-      await api.delete(`/files/${fileId}`);
+      console.log('🗑️ Eliminando archivo:', fileId);
+      
+      const response = await api.delete(`/files/${fileId}`);
+      
+      console.log('✅ Archivo eliminado exitosamente:', response.data);
     } catch (error) {
-      console.error('Error eliminando archivo:', error);
+      console.error('❌ Error eliminando archivo:', error);
       throw error;
     }
   }

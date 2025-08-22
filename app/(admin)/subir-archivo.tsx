@@ -61,6 +61,28 @@ export default function SubirArchivoScreen() {
     try {
       setIsLoading(true);
       const foldersData = await folderService.listFolders();
+      console.log('📁 Carpetas cargadas:', foldersData);
+      
+      // Debug: Ver la estructura de los archivos
+      foldersData.forEach((folder: any, index: number) => {
+        console.log(`📂 Carpeta ${index + 1}:`, folder.name);
+        if (folder.files && folder.files.length > 0) {
+          console.log(`📄 Archivos en ${folder.name}:`, folder.files);
+          folder.files.forEach((file: any, fileIndex: number) => {
+            console.log(`  📎 Archivo ${fileIndex + 1}:`, {
+              _id: file._id,
+              name: file.name,
+              nombre: file.nombre,
+              originalName: file.originalName,
+              description: file.description,
+              descripcion: file.descripcion,
+              size: file.size,
+              createdAt: file.createdAt
+            });
+          });
+        }
+      });
+      
       setFolders(foldersData);
     } catch (error: any) {
       console.error('Error cargando carpetas:', error);
@@ -165,6 +187,51 @@ export default function SubirArchivoScreen() {
     }
   };
 
+  const handleDeleteFile = async (fileId: string, folderId: string) => {
+    Alert.alert(
+      'Eliminar Archivo',
+      '¿Estás seguro de que quieres eliminar este archivo? Esta acción no se puede deshacer.',
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel',
+        },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              console.log('🗑️ Eliminando archivo:', fileId);
+              
+              // Mostrar indicador de carga
+              Alert.alert('Eliminando...', 'Por favor espera mientras se elimina el archivo.');
+              
+              await fileService.deleteFile(fileId);
+              
+              // Cerrar el alert de carga
+              Alert.alert('✅ Éxito', 'Archivo eliminado correctamente', [
+                {
+                  text: 'OK',
+                  onPress: () => {
+                    // Recargar la lista de carpetas
+                    loadFolders();
+                  }
+                }
+              ]);
+            } catch (error: any) {
+              console.error('❌ Error eliminando archivo:', error);
+              Alert.alert(
+                '❌ Error', 
+                'No se pudo eliminar el archivo. Verifica tu conexión a internet.',
+                [{ text: 'OK' }]
+              );
+            }
+          },
+        },
+      ],
+    );
+  };
+
   const resetForm = () => {
     console.log('Limpiando formulario');
     setFileData({
@@ -228,6 +295,47 @@ export default function SubirArchivoScreen() {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // Función helper para obtener el nombre correcto del archivo
+  const getFileName = (file: any) => {
+    // Intentar diferentes campos posibles
+    const possibleNames = [
+      file.name,
+      file.nombre,
+      file.originalName,
+      file.originalname,
+      file.filename,
+      file.fileName
+    ];
+    
+    // Retornar el primer nombre válido que encontremos
+    for (const name of possibleNames) {
+      if (name && typeof name === 'string' && name.trim() !== '') {
+        return name.trim();
+      }
+    }
+    
+    // Si no encontramos ningún nombre, usar uno por defecto
+    return 'Archivo sin nombre';
+  };
+
+  // Función helper para obtener la descripción correcta del archivo
+  const getFileDescription = (file: any) => {
+    const possibleDescriptions = [
+      file.description,
+      file.descripcion,
+      file.desc,
+      file.comment
+    ];
+    
+    for (const desc of possibleDescriptions) {
+      if (desc && typeof desc === 'string' && desc.trim() !== '') {
+        return desc.trim();
+      }
+    }
+    
+    return 'Sin descripción';
   };
 
   if (isLoading) {
@@ -328,20 +436,26 @@ export default function SubirArchivoScreen() {
                     {folder.files.map((file: any, index: number) => (
                       <View key={index} style={styles.fileItem}>
                         <Text style={styles.fileIcon}>
-                          {getFileIcon(file.nombre || file.originalName)}
+                          {getFileIcon(getFileName(file))}
                         </Text>
                         <View style={styles.fileInfo}>
                           <Text style={styles.fileName}>
-                            {file.nombre || file.originalName || 'Archivo sin nombre'}
+                            {getFileName(file)}
                           </Text>
                           <Text style={styles.fileDescription}>
-                            {file.descripcion || 'Sin descripción'}
+                            {getFileDescription(file)}
                           </Text>
                           <Text style={styles.fileDetails}>
                             {file.size ? formatFileSize(file.size) : ''} • 
                             {new Date(file.createdAt || file.uploadDate).toLocaleDateString('es-ES')}
                           </Text>
                         </View>
+                        <TouchableOpacity 
+                          style={styles.deleteFileButton}
+                          onPress={() => handleDeleteFile(file._id, folder._id)}
+                        >
+                          <Ionicons name="trash" size={20} color="#e74c3c" />
+                        </TouchableOpacity>
                       </View>
                     ))}
                     
@@ -674,32 +788,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f8f9fa',
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 8,
     marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#e9ecef',
   },
   fileIcon: {
-    fontSize: 20,
+    fontSize: 24,
     marginRight: 12,
   },
   fileInfo: {
     flex: 1,
   },
   fileName: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: '#2c3e50',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   fileDescription: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#7f8c8d',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   fileDetails: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#95a5a6',
+  },
+  deleteFileButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e74c3c',
+    marginLeft: 10,
   },
   noFilesContainer: {
     alignItems: 'center',
