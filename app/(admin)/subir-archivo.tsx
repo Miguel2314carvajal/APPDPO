@@ -365,34 +365,7 @@ export default function SubirArchivoScreen() {
           <View style={styles.headerSpacer} />
         </View>
 
-        {/* Estadísticas */}
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <View style={styles.statIconContainer}>
-              <Ionicons name="folder" size={20} color="#007AFF" />
-            </View>
-            <Text style={styles.statNumber}>{folders.length}</Text>
-            <Text style={styles.statLabel}>Carpetas</Text>
-          </View>
-          <View style={styles.statItem}>
-            <View style={styles.statIconContainer}>
-              <Ionicons name="document" size={20} color="#34C759" />
-            </View>
-            <Text style={styles.statNumber}>
-              {folders.reduce((total, folder) => total + (folder.files?.length || 0), 0)}
-            </Text>
-            <Text style={styles.statLabel}>Archivos</Text>
-          </View>
-          <View style={styles.statItem}>
-            <View style={styles.statIconContainer}>
-              <Ionicons name="folder-open" size={20} color="#FF9500" />
-            </View>
-            <Text style={styles.statNumber}>
-              {folders.filter(f => f.files && f.files.length > 0).length}
-            </Text>
-            <Text style={styles.statLabel}>Con Archivos</Text>
-          </View>
-        </View>
+
 
         {/* Lista de carpetas con archivos */}
         <ScrollView 
@@ -648,55 +621,11 @@ const styles = StyleSheet.create({
   headerSpacer: {
     width: 48,
   },
-  statsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    padding: 24,
-    backgroundColor: 'white',
-    marginTop: 32,
-    marginBottom: 24,
-    marginHorizontal: 20,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 6,
-  },
-  statItem: {
-    alignItems: 'center',
-    flex: 1,
-    paddingHorizontal: 8,
-  },
-  statIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#f8f9fa',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  statNumber: {
-    fontSize: 26,
-    fontWeight: 'bold',
-    color: '#2c3e50',
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 14,
-    color: '#7f8c8d',
-    fontWeight: '600',
-    textAlign: 'center',
-  },
+
   foldersList: {
     flex: 1,
     paddingHorizontal: 20,
+    paddingTop: 24,
     paddingBottom: 24,
   },
   emptyState: {

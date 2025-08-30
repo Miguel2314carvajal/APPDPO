@@ -8,6 +8,9 @@ import {
   Alert,
   StyleSheet,
   ActivityIndicator,
+  SafeAreaView,
+  StatusBar,
+  Platform,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -201,7 +204,13 @@ export default function EditarUsuarioScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar 
+        barStyle="dark-content" 
+        backgroundColor="#ffffff"
+        translucent={false}
+      />
+      
       <View style={styles.header}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -215,7 +224,12 @@ export default function EditarUsuarioScreen() {
         </View>
       </View>
 
-      <View style={styles.formContainer}>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.formContainer}>
         <View style={styles.sectionHeader}>
           <Ionicons name="person-circle" size={24} color="#007AFF" />
           <Text style={styles.sectionTitle}>Información del Usuario</Text>
@@ -395,11 +409,24 @@ export default function EditarUsuarioScreen() {
           </TouchableOpacity>
         </View>
       </View>
-    </ScrollView>
+        </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  scrollView: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 20,
+  },
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
@@ -440,13 +467,25 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: 'white',
     borderBottomWidth: 1,
     borderBottomColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 3,
   },
   backButton: {
     marginRight: 16,
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
   },
   headerContent: {
     flexDirection: 'row',
@@ -457,14 +496,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 8,
     color: '#333',
+    flex: 1,
   },
   formContainer: {
-    padding: 16,
+    padding: 20,
+    paddingTop: 24,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
+    marginTop: 8,
   },
   sectionTitle: {
     fontSize: 18,
@@ -473,15 +515,24 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   input: {
     backgroundColor: 'white',
     borderWidth: 1,
     borderColor: '#e0e0e0',
     borderRadius: 8,
-    padding: 12,
+    padding: 16,
     fontSize: 16,
+    minHeight: 48,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   disabledInput: {
     backgroundColor: '#f0f0f0',
@@ -559,15 +610,24 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   buttonContainer: {
-    gap: 12,
+    gap: 16,
+    marginTop: 8,
   },
   saveButton: {
     backgroundColor: '#007AFF',
-    padding: 16,
-    borderRadius: 8,
+    padding: 18,
+    borderRadius: 12,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   saveButtonDisabled: {
     backgroundColor: '#ccc',
@@ -580,11 +640,19 @@ const styles = StyleSheet.create({
   },
   deleteButton: {
     backgroundColor: '#e74c3c',
-    padding: 16,
-    borderRadius: 8,
+    padding: 18,
+    borderRadius: 12,
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   deleteButtonDisabled: {
     backgroundColor: '#ccc',
