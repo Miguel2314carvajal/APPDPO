@@ -16,8 +16,11 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import RNFS from 'react-native-fs';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { folderService } from '../../services/folderService';
 import { fileService } from '../../services/fileService';
+import { CONFIG } from '../../config/config';
+import PDFViewer from '../../components/PDFViewer';
 
 interface File {
   _id: string;
@@ -43,6 +46,8 @@ export default function CarpetaDetalle() {
   const [folder, setFolder] = useState<Folder | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showPDFViewer, setShowPDFViewer] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const navigation = useNavigation();
   const route = useRoute();
@@ -268,19 +273,68 @@ export default function CarpetaDetalle() {
         return;
       }
 
-      // Verificar si la URL es válida
-      const supported = await Linking.canOpenURL(file.url);
-      
-      if (supported) {
-        console.log('✅ URL soportada, abriendo archivo...');
-        await Linking.openURL(file.url);
-      } else {
-        console.log('❌ URL no soportada');
-        Alert.alert(
-          'No se puede abrir',
-          `No se puede abrir este tipo de archivo (${file.tipo || 'desconocido'}).\n\nURL: ${file.url}`,
-          [{ text: 'OK' }]
-        );
+      // Si es un PDF, usar el visor integrado
+      if (file.mimeType && file.mimeType.includes('pdf')) {
+        console.log('📄 Abriendo PDF con visor integrado...');
+        setSelectedFile(file);
+        setShowPDFViewer(true);
+        return;
+      }
+
+      // Para otros tipos de archivo, intentar abrir con aplicaciones externas
+      try {
+        // Obtener URL segura del backend
+        const response = await fetch(`${CONFIG.BACKEND_URL}/api/files/servir/${file._id}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${await AsyncStorage.getItem('token')}`
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        
+        if (data.success && data.url) {
+          console.log('✅ URL segura obtenida:', data.url);
+          
+          // Verificar si la URL es válida
+          const supported = await Linking.canOpenURL(data.url);
+          
+          if (supported) {
+            console.log('✅ URL soportada, abriendo archivo...');
+            await Linking.openURL(data.url);
+          } else {
+            console.log('❌ URL no soportada');
+            Alert.alert(
+              'No se puede abrir',
+              `No se puede abrir este tipo de archivo (${file.mimeType || 'desconocido'}).`,
+              [{ text: 'OK' }]
+            );
+          }
+        } else {
+          throw new Error('No se pudo obtener la URL del archivo');
+        }
+      } catch (apiError) {
+        console.error('❌ Error obteniendo URL segura:', apiError);
+        
+        // Fallback: intentar con la URL original
+        if (file.url) {
+          console.log('🔄 Intentando con URL original...');
+          const supported = await Linking.openURL(file.url);
+          
+          if (supported) {
+            console.log('✅ URL original soportada, abriendo archivo...');
+            await Linking.openURL(file.url);
+          } else {
+            throw new Error('No se puede abrir este tipo de archivo');
+          }
+        } else {
+          throw new Error('No hay URL disponible para este archivo');
+        }
       }
     } catch (error) {
       console.error('❌ Error abriendo archivo:', error);
@@ -410,12 +464,25 @@ export default function CarpetaDetalle() {
               </View>
             ))}
           </View>
-        )}
-      </View>
-    </ScrollView>
-    </SafeAreaView>
-  );
-}
+                 )}
+       </View>
+     </ScrollView>
+     
+           {/* PDF Viewer Modal */}
+      {showPDFViewer && selectedFile && (
+        <PDFViewer
+          fileUrl={selectedFile.url}
+          fileName={selectedFile.name}
+          fileId={selectedFile._id}
+          onClose={() => {
+            setShowPDFViewer(false);
+            setSelectedFile(null);
+          }}
+        />
+      )}
+     </SafeAreaView>
+   );
+ }
 
 const styles = StyleSheet.create({
   container: {

@@ -64,7 +64,7 @@ class FileService {
       console.log('  folder:', formData.get('folder'));
       
       // Subir archivo
-      const response = await api.post('/files/subir', formData, {
+      const response = await api.post('/api/files/subir', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -87,7 +87,7 @@ class FileService {
   // Listar todos los archivos
   async listFiles(): Promise<File[]> {
     try {
-      const response = await api.get('/files/listar');
+      const response = await api.get('/api/files/listar');
       return response.data;
     } catch (error: any) {
       console.error('Error listando archivos:', error);
@@ -98,7 +98,7 @@ class FileService {
   // Obtener archivo específico
   async getFile(fileId: string): Promise<File> {
     try {
-      const response = await api.get(`/files/${fileId}`);
+      const response = await api.get(`/api/files/${fileId}`);
       return response.data;
     } catch (error: any) {
       console.error('Error obteniendo archivo:', error);
@@ -109,7 +109,7 @@ class FileService {
   // Obtener archivos de una carpeta específica
   async getFilesByFolder(folderId: string): Promise<File[]> {
     try {
-      const response = await api.get(`/files/carpeta/${folderId}`);
+      const response = await api.get(`/api/files/carpeta/${folderId}`);
       return response.data;
     } catch (error: any) {
       console.error('Error obteniendo archivos de carpeta:', error);
@@ -120,7 +120,7 @@ class FileService {
   // Actualizar archivo
   async updateFile(fileId: string, fileData: UpdateFileData): Promise<File> {
     try {
-      const response = await api.put(`/files/${fileId}`, fileData);
+      const response = await api.put(`/api/files/${fileId}`, fileData);
       return response.data;
     } catch (error: any) {
       console.error('Error actualizando archivo:', error);
@@ -133,7 +133,7 @@ class FileService {
     try {
       console.log('🗑️ Eliminando archivo:', fileId);
       
-      const response = await api.delete(`/files/${fileId}`);
+      const response = await api.delete(`/api/files/${fileId}`);
       
       console.log('✅ Archivo eliminado exitosamente:', response.data);
     } catch (error: any) {
@@ -145,7 +145,7 @@ class FileService {
   // Descargar archivo
   async downloadFile(fileId: string): Promise<{ url: string; fileName: string }> {
     try {
-      const response = await api.get(`/files/${fileId}/descargar`);
+      const response = await api.get(`/api/files/${fileId}/descargar`);
       return response.data;
     } catch (error: any) {
       console.error('Error descargando archivo:', error);
@@ -156,7 +156,7 @@ class FileService {
   // Buscar archivos por nombre o descripción
   async searchFiles(query: string): Promise<File[]> {
     try {
-      const response = await api.get(`/files/buscar?q=${encodeURIComponent(query)}`);
+      const response = await api.get(`/api/files/buscar?q=${encodeURIComponent(query)}`);
       return response.data;
     } catch (error) {
       console.error('Error buscando archivos:', error);
@@ -172,7 +172,7 @@ class FileService {
     recentFiles: File[];
   }> {
     try {
-      const response = await api.get('/files/estadisticas');
+      const response = await api.get('/api/files/estadisticas');
       return response.data;
     } catch (error) {
       console.error('Error obteniendo estadísticas:', error);
@@ -183,7 +183,7 @@ class FileService {
   // Verificar si un archivo existe
   async fileExists(fileName: string, folderId: string): Promise<boolean> {
     try {
-      const response = await api.get(`/files/existe?nombre=${encodeURIComponent(fileName)}&carpetaId=${folderId}`);
+      const response = await api.get(`/api/files/existe?nombre=${encodeURIComponent(fileName)}&carpetaId=${folderId}`);
       return response.data.exists;
     } catch (error) {
       console.error('Error verificando existencia de archivo:', error);
@@ -194,7 +194,7 @@ class FileService {
   // Obtener tipos de archivo permitidos
   async getAllowedFileTypes(): Promise<string[]> {
     try {
-      const response = await api.get('/files/tipos-permitidos');
+      const response = await api.get('/api/files/tipos-permitidos');
       return response.data;
     } catch (error) {
       console.error('Error obteniendo tipos permitidos:', error);

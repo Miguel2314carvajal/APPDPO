@@ -15,7 +15,7 @@ export const authService = {
   // Login de usuario
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     try {
-      const response = await api.post('/users/login', credentials);
+      const response = await api.post('/api/users/login', credentials);
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { mensaje: 'Error en el login' };
@@ -25,7 +25,7 @@ export const authService = {
   // Registro de usuario (solo admin puede registrar)
   registerUser: async (userData: RegisterUserData & { folders?: string[] }): Promise<AuthResponse> => {
     try {
-      const response = await api.post('/users/registro', userData);
+      const response = await api.post('/api/users/registro', userData);
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { mensaje: 'Error en el registro' };
@@ -35,7 +35,7 @@ export const authService = {
   // Obtener perfil del usuario
   getProfile: async (): Promise<any> => {
     try {
-      const response = await api.get('/users/perfil');
+      const response = await api.get('/api/users/perfil');
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { mensaje: 'Error al obtener perfil' };
@@ -45,7 +45,7 @@ export const authService = {
   // Actualizar perfil del usuario
   updateProfile: async (userData: Partial<RegisterUserData>): Promise<any> => {
     try {
-      const response = await api.put('/users/actualizar', userData);
+      const response = await api.put('/api/users/actualizar', userData);
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { mensaje: 'Error al actualizar perfil' };
@@ -55,7 +55,7 @@ export const authService = {
   // Listar todos los usuarios (solo admin)
   listUsers: async (): Promise<any[]> => {
     try {
-      const response = await api.get('/users/listar');
+      const response = await api.get('/api/users/listar');
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { mensaje: 'Error al listar usuarios' };
@@ -65,7 +65,7 @@ export const authService = {
   // Obtener usuario específico por cédula
   getUserByCedula: async (cedula: string): Promise<any> => {
     try {
-      const response = await api.get(`/users/cedula/${cedula}`);
+      const response = await api.get(`/api/users/cedula/${cedula}`);
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { mensaje: 'Error al obtener usuario' };
@@ -75,7 +75,7 @@ export const authService = {
   // Actualizar usuario (solo admin)
   updateUser: async (cedula: string, userData: UpdateUserData): Promise<any> => {
     try {
-      const response = await api.put(`/users/actualizar/${cedula}`, userData);
+      const response = await api.put(`/api/users/actualizar/${cedula}`, userData);
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { mensaje: 'Error al actualizar usuario' };
@@ -85,7 +85,7 @@ export const authService = {
   // Eliminar usuario (solo admin)
   deleteUser: async (cedula: string): Promise<any> => {
     try {
-      const response = await api.delete(`/users/eliminar/${cedula}`);
+      const response = await api.delete(`/api/users/eliminar/${cedula}`);
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { mensaje: 'Error al eliminar usuario' };
@@ -95,7 +95,7 @@ export const authService = {
   // Sincronizar carpetas del usuario
   async syncUserFolders(userId: string): Promise<any> {
     try {
-      const response = await api.post(`/users/sincronizar-carpetas/${userId}`);
+      const response = await api.post(`/api/users/sincronizar-carpetas/${userId}`);
       return response.data;
     } catch (error: any) {
       console.error('Error sincronizando carpetas:', error);
@@ -106,7 +106,7 @@ export const authService = {
   // Cambiar contraseña del usuario
   async changePassword(currentPassword: string, newPassword: string): Promise<any> {
     try {
-      const response = await api.post('/users/cambiar-contrasena', {
+      const response = await api.post('/api/users/cambiar-contrasena', {
         currentPassword,
         newPassword
       });

@@ -24,7 +24,7 @@ class FolderService {
   // Listar todas las carpetas (para admin)
   async listFolders(): Promise<Folder[]> {
     try {
-      const response = await api.get('/folders/listar');
+      const response = await api.get('/api/folders/listar');
       return response.data;
     } catch (error: any) {
       console.error('Error listando carpetas:', error);
@@ -35,7 +35,7 @@ class FolderService {
   // Obtener una carpeta específica
   async getFolder(folderId: string): Promise<Folder> {
     try {
-      const response = await api.get(`/folders/${folderId}`);
+      const response = await api.get(`/api/folders/${folderId}`);
       return response.data;
     } catch (error: any) {
       console.error('Error obteniendo carpeta:', error);
@@ -47,7 +47,7 @@ class FolderService {
   async createFolder(folderData: CreateFolderData): Promise<Folder> {
     try {
       console.log('Enviando datos para crear carpeta:', folderData);
-      const response = await api.post('/folders/crear', folderData);
+      const response = await api.post('/api/folders/crear', folderData);
       console.log('Respuesta del backend:', response.data);
       return response.data;
     } catch (error: any) {
@@ -63,7 +63,7 @@ class FolderService {
   // Actualizar carpeta (solo admin)
   async updateFolder(folderId: string, folderData: UpdateFolderData): Promise<Folder> {
     try {
-      const response = await api.put(`/folders/${folderId}`, folderData);
+      const response = await api.put(`/api/folders/${folderId}`, folderData);
       return response.data;
     } catch (error: any) {
       console.error('Error actualizando carpeta:', error);
@@ -74,7 +74,7 @@ class FolderService {
   // Eliminar carpeta (solo admin)
   async deleteFolder(folderId: string): Promise<void> {
     try {
-      await api.delete(`/folders/${folderId}`);
+      await api.delete(`/api/folders/${folderId}`);
     } catch (error: any) {
       console.error('Error eliminando carpeta:', error);
       throw error;
@@ -84,7 +84,7 @@ class FolderService {
   // Asignar usuarios a una carpeta (solo admin)
   async assignUsersToFolder(folderId: string, userIds: string[]): Promise<Folder> {
     try {
-      const response = await api.put(`/folders/${folderId}/usuarios`, { usuarios: userIds });
+      const response = await api.put(`/api/folders/${folderId}/usuarios`, { usuarios: userIds });
       return response.data;
     } catch (error: any) {
       console.error('Error asignando usuarios a carpeta:', error);
@@ -95,7 +95,7 @@ class FolderService {
   // Obtener carpetas de un usuario específico
   async getUserFolders(userId: string): Promise<Folder[]> {
     try {
-      const response = await api.get(`/folders/usuario/${userId}`);
+      const response = await api.get(`/api/folders/usuario/${userId}`);
       return response.data;
     } catch (error: any) {
       console.error('Error obteniendo carpetas del usuario:', error);

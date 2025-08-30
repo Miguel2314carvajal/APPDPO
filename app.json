@@ -34,15 +34,9 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "static",
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "expo-router"
-    ],
-    "scheme": "auditorias-app",
-    "experiments": {
-      "typedRoutes": true
-    }
+    "plugins": [],
+    "scheme": "auditorias-app"
   }
 }

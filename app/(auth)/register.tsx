@@ -11,7 +11,7 @@ import {
   ScrollView,
   ActivityIndicator
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/authService';
 
@@ -27,7 +27,7 @@ export default function RegisterScreen() {
   const [isLoading, setIsLoading] = useState(false);
   
   const { register } = useAuth();
-  const router = useRouter();
+  const navigation = useNavigation<any>();
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -71,16 +71,17 @@ export default function RegisterScreen() {
         [
           {
             text: 'OK',
-            onPress: () => (router as any).replace('/(admin)')
+            onPress: () => navigation.navigate('AdminDashboard')
           }
         ]
       );
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error en registro:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error al registrar usuario. Intenta nuevamente.';
       Alert.alert(
         'Error de Registro',
-        error.mensaje || 'Error al registrar usuario. Intenta nuevamente.'
+        errorMessage
       );
     } finally {
       setIsLoading(false);
@@ -88,7 +89,7 @@ export default function RegisterScreen() {
   };
 
   const handleBack = () => {
-    router.back();
+    navigation.goBack();
   };
 
   return (
