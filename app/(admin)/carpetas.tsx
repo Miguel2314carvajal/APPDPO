@@ -31,9 +31,17 @@ export default function CarpetasScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
   
   // Formulario de nueva carpeta
   const [newFolder, setNewFolder] = useState({
+    name: '',
+    files: []
+  });
+  
+  // Formulario de edición
+  const [editFolder, setEditFolder] = useState({
     name: '',
     files: []
   });
@@ -83,6 +91,39 @@ export default function CarpetasScreen() {
       console.error('Error creando carpeta:', error);
       Alert.alert('Error', 'No se pudo crear la carpeta');
     }
+  };
+
+  const handleEditFolder = async () => {
+    if (!editFolder.name.trim()) {
+      Alert.alert('Error', 'Por favor ingresa el nombre de la carpeta');
+      return;
+    }
+
+    if (!editingFolder) {
+      Alert.alert('Error', 'No se encontró la carpeta a editar');
+      return;
+    }
+
+    try {
+      await folderService.updateFolder(editingFolder._id, { name: editFolder.name });
+      Alert.alert('Éxito', 'Carpeta actualizada correctamente');
+      setShowEditModal(false);
+      setEditingFolder(null);
+      setEditFolder({ name: '', files: [] });
+      loadData();
+    } catch (error: any) {
+      console.error('Error actualizando carpeta:', error);
+      Alert.alert('Error', 'No se pudo actualizar la carpeta');
+    }
+  };
+
+  const openEditModal = (folder: Folder) => {
+    setEditingFolder(folder);
+    setEditFolder({
+      name: folder.name,
+      files: folder.files || []
+    });
+    setShowEditModal(true);
   };
 
   const handleDeleteFolder = (folder: Folder) => {
@@ -182,12 +223,12 @@ export default function CarpetasScreen() {
                   </View>
                   
                   <View style={styles.folderActions}>
-                    <TouchableOpacity 
-                      style={[styles.actionButton, styles.editButton]}
-                      onPress={() => Alert.alert('Próximamente', 'Edición de carpetas estará disponible pronto')}
-                    >
-                      <Ionicons name="create" size={18} color="white" />
-                    </TouchableOpacity>
+                                         <TouchableOpacity 
+                       style={[styles.actionButton, styles.editButton]}
+                       onPress={() => openEditModal(folder)}
+                     >
+                       <Ionicons name="create" size={18} color="white" />
+                     </TouchableOpacity>
                     
                     <TouchableOpacity 
                       style={[styles.actionButton, styles.deleteButton]}
@@ -246,11 +287,61 @@ export default function CarpetasScreen() {
               </View>
             </View>
           </View>
-        </Modal>
-      </View>
-    </SafeAreaView>
-  );
-}
+                 </Modal>
+
+         {/* Modal para editar carpeta */}
+         <Modal
+           visible={showEditModal}
+           animationType="slide"
+           transparent={true}
+           onRequestClose={() => setShowEditModal(false)}
+         >
+           <View style={styles.modalOverlay}>
+             <View style={styles.modalContent}>
+               <View style={styles.modalHeader}>
+                 <Ionicons name="create" size={24} color="#f39c12" />
+                 <Text style={styles.modalTitle}>Editar Carpeta</Text>
+               </View>
+               
+               <Text style={styles.inputLabel}>Nombre de la carpeta</Text>
+               <TextInput
+                 style={styles.input}
+                 placeholder="Ej: Documentos Básicos"
+                 value={editFolder.name}
+                 onChangeText={(text) => setEditFolder(prev => ({ ...prev, name: text }))}
+               />
+               
+               <Text style={styles.inputLabel}>Descripción</Text>
+               <Text style={styles.descriptionText}>
+                 Esta carpeta almacena archivos relacionados con "{editFolder.name}"
+               </Text>
+               
+               <View style={styles.modalActions}>
+                 <TouchableOpacity 
+                   style={[styles.modalButton, styles.cancelButton]}
+                   onPress={() => {
+                     setShowEditModal(false);
+                     setEditingFolder(null);
+                     setEditFolder({ name: '', files: [] });
+                   }}
+                 >
+                   <Text style={styles.cancelButtonText}>Cancelar</Text>
+                 </TouchableOpacity>
+                 
+                 <TouchableOpacity 
+                   style={[styles.modalButton, styles.editButton]}
+                   onPress={handleEditFolder}
+                 >
+                   <Text style={styles.editButtonText}>Actualizar Carpeta</Text>
+                 </TouchableOpacity>
+               </View>
+             </View>
+           </View>
+         </Modal>
+       </View>
+     </SafeAreaView>
+   );
+ }
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -495,19 +586,27 @@ const styles = StyleSheet.create({
   cancelButton: {
     backgroundColor: '#95a5a6',
   },
-  createButton: {
-    backgroundColor: '#27ae60',
-  },
-  cancelButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  createButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+     createButton: {
+     backgroundColor: '#27ae60',
+   },
+   editButton: {
+     backgroundColor: '#f39c12',
+   },
+   cancelButtonText: {
+     color: 'white',
+     fontSize: 16,
+     fontWeight: '600',
+   },
+   createButtonText: {
+     color: 'white',
+     fontSize: 16,
+     fontWeight: '600',
+   },
+   editButtonText: {
+     color: 'white',
+     fontSize: 16,
+     fontWeight: '600',
+   },
   descriptionText: {
     fontSize: 14,
     color: '#7f8c8d',
