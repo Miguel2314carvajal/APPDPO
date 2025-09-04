@@ -33,10 +33,11 @@ export default function NuevoUsuarioScreen() {
   const [formData, setFormData] = useState({
     email: '',
     companyName: '',
+    maxSessions: 3,
     carpetaId: '',
   });
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -68,6 +69,7 @@ export default function NuevoUsuarioScreen() {
       const userData = {
         email: formData.email,
         companyName: formData.companyName,
+        maxSessions: formData.maxSessions,
         folders: selectedFolders.map(folder => folder._id)
       };
 
@@ -119,7 +121,7 @@ export default function NuevoUsuarioScreen() {
               autoCapitalize="none"
             />
           </View>
-
+          
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Empresa *</Text>
             <TextInput
@@ -128,6 +130,32 @@ export default function NuevoUsuarioScreen() {
               value={formData.companyName}
               onChangeText={(value) => handleInputChange('companyName', value)}
             />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Límite de dispositivos *</Text>
+            <View style={styles.maxSessionsContainer}>
+              {[1, 2, 3].map((num) => (
+                <TouchableOpacity
+                  key={num}
+                  style={[
+                    styles.maxSessionsButton,
+                    formData.maxSessions === num && styles.maxSessionsButtonActive
+                  ]}
+                  onPress={() => handleInputChange('maxSessions', num)}
+                >
+                  <Text style={[
+                    styles.maxSessionsButtonText,
+                    formData.maxSessions === num && styles.maxSessionsButtonTextActive
+                  ]}>
+                    {num}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <Text style={styles.maxSessionsHelp}>
+              Selecciona cuántos dispositivos pueden usar esta cuenta simultáneamente
+            </Text>
           </View>
 
           <View style={styles.sectionHeader}>
@@ -322,5 +350,37 @@ const styles = StyleSheet.create({
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  maxSessionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 10,
+    marginBottom: 10,
+  },
+  maxSessionsButton: {
+    backgroundColor: '#e0e0e0',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  maxSessionsButtonActive: {
+    backgroundColor: '#007AFF',
+    borderColor: '#007AFF',
+  },
+  maxSessionsButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  maxSessionsButtonTextActive: {
+    color: 'white',
+  },
+  maxSessionsHelp: {
+    fontSize: 14,
+    color: '#666',
+    marginTop: 5,
+    textAlign: 'center',
   },
 });

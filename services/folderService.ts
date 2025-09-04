@@ -11,6 +11,7 @@ export interface Folder {
 
 export interface CreateFolderData {
   name: string;
+  parentFolder?: string | null;
   files?: string[];
 }
 
@@ -77,6 +78,16 @@ class FolderService {
       await api.delete(`/api/folders/${folderId}`);
     } catch (error: any) {
       console.error('Error eliminando carpeta:', error);
+      throw error;
+    }
+  }
+
+  // Eliminar carpetas vacías (solo admin)
+  async deleteEmptyFolders(): Promise<void> {
+    try {
+      await api.post('/api/folders/limpiar');
+    } catch (error: any) {
+      console.error('Error eliminando carpetas vacías:', error);
       throw error;
     }
   }

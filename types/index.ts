@@ -2,6 +2,7 @@ export interface User {
   _id: string;
   email: string;
   companyName: string;
+  maxSessions: number;
   rol: 'admin' | 'user' | 'usuario';
   folders: string[];
   createdAt: string;
@@ -11,7 +12,9 @@ export interface User {
 export interface Folder {
   _id: string;
   name: string;
+  parentFolder?: string | null;
   files: string[];
+  usuarios: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -43,5 +46,6 @@ export interface LoginCredentials {
 export interface RegisterUserData {
   email: string;
   companyName: string;
+  maxSessions?: number;
   folders: string[];
 }

@@ -21,13 +21,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 interface Folder {
   _id: string;
   name: string;
+  parentFolder?: string | null;
   files: any[];
   usuarios: string[];
   createdAt: string;
 }
 
 export default function CarpetasScreen() {
-  const [folders, setFolders] = useState<Folder[]>([]);
+  const [allFolders, setAllFolders] = useState<Folder[]>([]); // Todas las carpetas
+  const [folders, setFolders] = useState<Folder[]>([]); // Solo carpetas principales para mostrar
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -37,7 +39,11 @@ export default function CarpetasScreen() {
   // Formulario de nueva carpeta
   const [newFolder, setNewFolder] = useState({
     name: '',
-    files: []
+    parentFolder: null as string | null,
+    files: [],
+    showSubfolderInput: false,
+    subfolderName: '',
+    subfolders: [] as string[] // Added for visual list of subfolders
   });
   
   // Formulario de edición
@@ -45,6 +51,15 @@ export default function CarpetasScreen() {
     name: '',
     files: []
   });
+  
+  // Subcarpetas a editar (cuando se edita una carpeta principal)
+  const [subfoldersToEdit, setSubfoldersToEdit] = useState<Folder[]>([]);
+  
+  // Estado para el modal de selección de subcarpetas
+  const [showSubfolderModal, setShowSubfolderModal] = useState(false);
+  const [selectedSubfolders, setSelectedSubfolders] = useState<string[]>([]);
+  const [currentMainFolder, setCurrentMainFolder] = useState<Folder | null>(null);
+  const [currentSubfolders, setCurrentSubfolders] = useState<Folder[]>([]);
 
   const { user: currentUser } = useAuth();
   const navigation = useNavigation();
@@ -57,7 +72,28 @@ export default function CarpetasScreen() {
     try {
       setIsLoading(true);
       const foldersData = await folderService.listFolders();
-      setFolders(foldersData);
+      
+      console.log('📁 Todas las carpetas cargadas:', foldersData);
+      
+      // Ordenar carpetas: primero las principales, luego las subcarpetas
+      const sortedFolders = foldersData.sort((a, b) => {
+        // Si ambas son principales o ambas son subcarpetas, ordenar por nombre
+        if ((!a.parentFolder && !b.parentFolder) || (a.parentFolder && b.parentFolder)) {
+          return a.name.localeCompare(b.name);
+        }
+        // Las carpetas principales van primero
+        if (!a.parentFolder && b.parentFolder) return -1;
+        if (a.parentFolder && !b.parentFolder) return 1;
+        return 0;
+      });
+      
+      console.log('📁 Carpetas ordenadas:', sortedFolders);
+      
+      const mainFolders = sortedFolders.filter(folder => !folder.parentFolder);
+      console.log('📁 Solo carpetas principales:', mainFolders);
+      
+      setAllFolders(sortedFolders);
+      setFolders(mainFolders); // Solo carpetas principales
     } catch (error: any) {
       console.error('Error cargando datos:', error);
       Alert.alert('Error', 'No se pudieron cargar los datos');
@@ -78,18 +114,52 @@ export default function CarpetasScreen() {
       return;
     }
 
-    console.log('🔍 Usuario actual:', currentUser);
-    console.log('🔍 Token disponible:', await AsyncStorage.getItem('token'));
-
+    setIsLoading(true);
     try {
-      await folderService.createFolder(newFolder);
-      Alert.alert('Éxito', 'Carpeta creada correctamente');
+      // Crear la carpeta principal primero
+      const mainFolderData = {
+        name: newFolder.name,
+        parentFolder: null,
+        files: []
+      };
+
+      console.log('📁 Creando carpeta principal:', mainFolderData);
+      const mainFolder = await folderService.createFolder(mainFolderData);
+      console.log('✅ Carpeta principal creada:', mainFolder);
+      
+      // Extraer el ID de la respuesta anidada del backend
+      const mainFolderId = mainFolder.folder?._id || mainFolder._id;
+      console.log('🆔 ID de la carpeta principal:', mainFolderId);
+      
+      // Crear todas las subcarpetas agregadas
+      if (newFolder.subfolders.length > 0) {
+        console.log('📁 Creando subcarpetas:', newFolder.subfolders);
+        for (const subfolderName of newFolder.subfolders) {
+          const subfolderData = {
+            name: subfolderName,
+            parentFolder: mainFolderId, // Usar el ID extraído correctamente
+            files: []
+          };
+          
+          console.log('📁 Creando subcarpeta:', subfolderData);
+          console.log('🔗 parentFolder ID:', mainFolderId);
+          const subfolder = await folderService.createFolder(subfolderData);
+          console.log('✅ Subcarpeta creada:', subfolder);
+        }
+        
+        Alert.alert('✅ Éxito', `Carpeta "${newFolder.name}" creada con ${newFolder.subfolders.length} subcarpeta${newFolder.subfolders.length > 1 ? 's' : ''}`);
+      } else {
+        Alert.alert('✅ Éxito', `Carpeta "${newFolder.name}" creada correctamente`);
+      }
+      
       setShowCreateModal(false);
-      setNewFolder({ name: '', files: [] });
+      setNewFolder({ name: '', parentFolder: null, files: [], showSubfolderInput: false, subfolderName: '', subfolders: [] });
       loadData();
     } catch (error: any) {
       console.error('Error creando carpeta:', error);
       Alert.alert('Error', 'No se pudo crear la carpeta');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -105,12 +175,33 @@ export default function CarpetasScreen() {
     }
 
     try {
+      // Actualizar la carpeta principal
       await folderService.updateFolder(editingFolder._id, { name: editFolder.name });
-      Alert.alert('Éxito', 'Carpeta actualizada correctamente');
+      
+      // Si es una carpeta principal y tiene subcarpetas, actualizarlas también
+      if (!editingFolder.parentFolder && subfoldersToEdit.length > 0) {
+        console.log('🔄 Actualizando subcarpetas:', subfoldersToEdit);
+        
+        // Actualizar cada subcarpeta
+        for (const subfolder of subfoldersToEdit) {
+          try {
+            await folderService.updateFolder(subfolder._id, { name: subfolder.name });
+            console.log(`✅ Subcarpeta "${subfolder.name}" actualizada`);
+          } catch (error) {
+            console.error(`❌ Error actualizando subcarpeta "${subfolder.name}":`, error);
+          }
+        }
+        
+        Alert.alert('✅ Éxito', `Carpeta "${editFolder.name}" y ${subfoldersToEdit.length} subcarpeta${subfoldersToEdit.length > 1 ? 's' : ''} actualizadas correctamente`);
+      } else {
+        Alert.alert('✅ Éxito', 'Carpeta actualizada correctamente');
+      }
+      
       setShowEditModal(false);
       setEditingFolder(null);
       setEditFolder({ name: '', files: [] });
-      loadData();
+      setSubfoldersToEdit([]);
+      loadData(); // Recargar datos para mostrar cambios
     } catch (error: any) {
       console.error('Error actualizando carpeta:', error);
       Alert.alert('Error', 'No se pudo actualizar la carpeta');
@@ -123,26 +214,201 @@ export default function CarpetasScreen() {
       name: folder.name,
       files: folder.files || []
     });
+    
+    // Si es una carpeta principal, obtener sus subcarpetas
+    if (!folder.parentFolder) {
+      const subfolders = allFolders.filter(f => {
+        if (f.parentFolder) {
+          if (typeof f.parentFolder === 'object' && f.parentFolder._id) {
+            return f.parentFolder._id === folder._id;
+          }
+          return f.parentFolder === folder._id;
+        }
+        return false;
+      });
+      setSubfoldersToEdit(subfolders);
+      console.log('📁 Subcarpetas encontradas para editar:', subfolders);
+    } else {
+      setSubfoldersToEdit([]);
+    }
+    
     setShowEditModal(true);
   };
 
   const handleDeleteFolder = (folder: Folder) => {
+    // Si es una carpeta principal con subcarpetas, mostrar opciones
+    if (!folder.parentFolder) {
+      const subfolders = allFolders.filter(f => {
+        if (f.parentFolder) {
+          if (typeof f.parentFolder === 'object' && f.parentFolder._id) {
+            return f.parentFolder._id === folder._id;
+          }
+          return f.parentFolder === folder._id;
+        }
+        return false;
+      });
+
+      if (subfolders.length > 0) {
+        Alert.alert(
+          'Eliminar Carpeta',
+          `"${folder.name}" tiene ${subfolders.length} subcarpeta${subfolders.length > 1 ? 's' : ''}. ¿Qué deseas eliminar?`,
+          [
+            {
+              text: 'Solo esta carpeta',
+              style: 'default',
+              onPress: () => deleteFolder(folder, false)
+            },
+            {
+              text: 'Seleccionar subcarpetas',
+              style: 'default',
+              onPress: () => showSubfolderSelection(folder, subfolders)
+            },
+            {
+              text: 'Carpeta + todas las subcarpetas',
+              style: 'destructive',
+              onPress: () => deleteFolder(folder, true)
+            },
+            {
+              text: 'Cancelar',
+              style: 'cancel'
+            }
+          ]
+        );
+        return;
+      }
+    }
+    
+    // Eliminar carpeta individual (sin subcarpetas o es una subcarpeta)
+    deleteFolder(folder, false);
+  };
+
+  const deleteFolder = async (folder: Folder, withSubfolders: boolean) => {
+    try {
+      if (withSubfolders) {
+        // Eliminar subcarpetas primero
+        const subfolders = allFolders.filter(f => {
+          if (f.parentFolder) {
+            if (typeof f.parentFolder === 'object' && f.parentFolder._id) {
+              return f.parentFolder._id === folder._id;
+            }
+            return f.parentFolder === folder._id;
+          }
+          return false;
+        });
+        
+        console.log('🗑️ Eliminando subcarpetas:', subfolders);
+        
+        for (const subfolder of subfolders) {
+          await folderService.deleteFolder(subfolder._id);
+          console.log(`✅ Subcarpeta "${subfolder.name}" eliminada`);
+        }
+        
+        // Luego eliminar la carpeta principal
+        await folderService.deleteFolder(folder._id);
+        console.log(`✅ Carpeta principal "${folder.name}" eliminada`);
+        
+        Alert.alert('✅ Éxito', `Carpeta "${folder.name}" y ${subfolders.length} subcarpeta${subfolders.length > 1 ? 's' : ''} eliminadas`);
+      } else {
+        await folderService.deleteFolder(folder._id);
+        console.log(`✅ Carpeta "${folder.name}" eliminada`);
+        Alert.alert('✅ Éxito', `Carpeta "${folder.name}" eliminada`);
+      }
+      
+      loadData(); // Recargar datos para mostrar cambios
+    } catch (error: any) {
+      console.error('Error eliminando carpeta:', error);
+      Alert.alert('Error', 'No se pudo eliminar la carpeta');
+    }
+  };
+
+  const showSubfolderSelection = (mainFolder: Folder, subfolders: Folder[]) => {
+    setCurrentMainFolder(mainFolder);
+    setCurrentSubfolders(subfolders);
+    setSelectedSubfolders([]); // Resetear selecciones
+    setShowSubfolderModal(true);
+  };
+
+  const toggleSubfolderSelection = (subfolderId: string) => {
+    setSelectedSubfolders(prev => {
+      if (prev.includes(subfolderId)) {
+        return prev.filter(id => id !== subfolderId);
+      } else {
+        return [...prev, subfolderId];
+      }
+    });
+  };
+
+  const deleteSelectedSubfolders = async () => {
+    if (selectedSubfolders.length === 0) {
+      Alert.alert('Error', 'Por favor selecciona al menos una subcarpeta');
+      return;
+    }
+
+    try {
+      console.log('🗑️ Eliminando subcarpetas seleccionadas:', selectedSubfolders);
+      
+      // Eliminar solo las subcarpetas seleccionadas
+      for (const subfolderId of selectedSubfolders) {
+        await folderService.deleteFolder(subfolderId);
+        console.log(`✅ Subcarpeta eliminada`);
+      }
+      
+      Alert.alert('✅ Éxito', `${selectedSubfolders.length} subcarpeta${selectedSubfolders.length > 1 ? 's' : ''} eliminada${selectedSubfolders.length > 1 ? 's' : ''}`);
+      
+      setShowSubfolderModal(false);
+      setCurrentMainFolder(null);
+      setCurrentSubfolders([]);
+      setSelectedSubfolders([]);
+      
+      loadData(); // Recargar datos para mostrar cambios
+    } catch (error: any) {
+      console.error('Error eliminando subcarpetas seleccionadas:', error);
+      Alert.alert('Error', 'No se pudieron eliminar las subcarpetas');
+    }
+  };
+
+  const handleCleanupFolders = async () => {
     Alert.alert(
-      'Eliminar Carpeta',
-      `¿Estás seguro de que quieres eliminar la carpeta "${folder.name}"?`,
+      'Limpiar Carpetas',
+      '¿Estás seguro de que quieres eliminar todas las carpetas vacías?',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
-          text: 'Eliminar',
+          text: 'Limpiar',
           style: 'destructive',
           onPress: async () => {
             try {
-              await folderService.deleteFolder(folder._id);
-              Alert.alert('Éxito', 'Carpeta eliminada correctamente');
+              await folderService.deleteEmptyFolders();
+              Alert.alert('Éxito', 'Carpetas vacías eliminadas correctamente');
               loadData();
             } catch (error: any) {
-              console.error('Error eliminando carpeta:', error);
-              Alert.alert('Error', 'No se pudo eliminar la carpeta');
+              console.error('Error limpiando carpetas:', error);
+              Alert.alert('Error', 'No se pudieron eliminar las carpetas vacías');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleDebugFolders = async () => {
+    Alert.alert(
+      'Debug de Carpetas',
+      'Esta función mostrará la estructura completa de las carpetas en la consola.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Mostrar',
+          style: 'default',
+          onPress: async () => {
+            try {
+              const allFolders = await folderService.listFolders();
+              console.log('📁 Estructura de Carpetas Completa:');
+              console.log(JSON.stringify(allFolders, null, 2));
+              Alert.alert('Debug', 'Estructura de carpetas mostrada en la consola.');
+            } catch (error: any) {
+              console.error('Error al mostrar estructura de carpetas:', error);
+              Alert.alert('Error', 'No se pudo mostrar la estructura de carpetas.');
             }
           }
         }
@@ -174,15 +440,27 @@ export default function CarpetasScreen() {
             <Ionicons name="folder" size={24} color="#FFD700" />
             <Text style={styles.headerTitle}>Gestión de Carpetas</Text>
           </View>
-          <TouchableOpacity 
-            style={styles.addButton} 
-            onPress={() => setShowCreateModal(true)}
-          >
-            <Ionicons name="add" size={24} color="white" />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity 
+              style={styles.debugButton} 
+              onPress={handleDebugFolders}
+            >
+              <Ionicons name="bug" size={20} color="#9b59b6" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.cleanupButton} 
+              onPress={handleCleanupFolders}
+            >
+              <Ionicons name="trash" size={20} color="#e74c3c" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.addButton} 
+              onPress={() => setShowCreateModal(true)}
+            >
+              <Ionicons name="add" size={24} color="white" />
+            </TouchableOpacity>
+          </View>
         </View>
-
-
 
         {/* Lista de carpetas */}
         <ScrollView 
@@ -193,10 +471,18 @@ export default function CarpetasScreen() {
           showsVerticalScrollIndicator={false}
         >
           {folders.map((folder) => (
-            <View key={folder._id} style={styles.folderCard}>
+            <View key={folder._id} style={[
+              styles.folderCard,
+              folder.parentFolder && styles.subfolderCard // Estilo especial para subcarpetas
+            ]}>
               <View style={styles.folderHeader}>
                 <Text style={styles.folderName}>{folder.name}</Text>
-                <Text style={styles.folderDescription}>Carpeta de archivos</Text>
+                <Text style={styles.folderDescription}>
+                  {folder.parentFolder ? 
+                    `Subcarpeta de "${folders.find(f => f._id === folder.parentFolder)?.name || 'Desconocida'}"` :
+                    'Carpeta de archivos'
+                  }
+                </Text>
               </View>
               
               <View style={styles.folderInfo}>
@@ -223,12 +509,12 @@ export default function CarpetasScreen() {
                   </View>
                   
                   <View style={styles.folderActions}>
-                                         <TouchableOpacity 
-                       style={[styles.actionButton, styles.editButton]}
-                       onPress={() => openEditModal(folder)}
-                     >
-                       <Ionicons name="create" size={18} color="white" />
-                     </TouchableOpacity>
+                    <TouchableOpacity 
+                      style={[styles.actionButton, styles.editButton]}
+                      onPress={() => openEditModal(folder)}
+                    >
+                      <Ionicons name="create" size={18} color="white" />
+                    </TouchableOpacity>
                     
                     <TouchableOpacity 
                       style={[styles.actionButton, styles.deleteButton]}
@@ -238,6 +524,34 @@ export default function CarpetasScreen() {
                     </TouchableOpacity>
                   </View>
                 </View>
+                
+                {/* Mostrar subcarpetas en línea separada si es una carpeta principal */}
+                {!folder.parentFolder && (
+                  <View style={styles.subfolderStatsRow}>
+                    <View style={styles.folderStat}>
+                      <Ionicons name="folder-open" size={16} color="#f39c12" />
+                      <Text style={styles.folderStatText}>
+                        {(() => {
+                          const subfolderCount = allFolders.filter(f => {
+                            // Verificar si es subcarpeta de esta carpeta principal
+                            if (f.parentFolder) {
+                              // Si parentFolder es un objeto populado, usar su _id
+                              if (typeof f.parentFolder === 'object' && f.parentFolder._id) {
+                                return f.parentFolder._id === folder._id;
+                              }
+                              // Si parentFolder es un string, comparar directamente
+                              return f.parentFolder === folder._id;
+                            }
+                            return false;
+                          }).length;
+                          
+                          console.log(`📁 Contando subcarpetas para "${folder.name}": ${subfolderCount}`);
+                          return subfolderCount;
+                        })()} subcarpetas
+                      </Text>
+                    </View>
+                  </View>
+                )}
               </View>
             </View>
           ))}
@@ -251,13 +565,17 @@ export default function CarpetasScreen() {
           onRequestClose={() => setShowCreateModal(false)}
         >
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
+            <ScrollView 
+              style={styles.modalContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
               <View style={styles.modalHeader}>
                 <Ionicons name="folder" size={24} color="#007AFF" />
                 <Text style={styles.modalTitle}>Crear Nueva Carpeta</Text>
               </View>
               
-              <Text style={styles.inputLabel}>Nombre de la carpeta</Text>
+              <Text style={styles.inputLabel}>Nombre de la carpeta principal</Text>
               <TextInput
                 style={styles.input}
                 placeholder="Ej: Documentos Básicos"
@@ -265,9 +583,99 @@ export default function CarpetasScreen() {
                 onChangeText={(text) => setNewFolder(prev => ({ ...prev, name: text }))}
               />
               
+              <View style={styles.subfolderSection}>
+                <Text style={styles.sectionSubtitle}>Subcarpetas (opcional)</Text>
+                <Text style={styles.sectionDescription}>
+                  Puedes agregar subcarpetas dentro de esta carpeta principal
+                </Text>
+                
+                {/* Mostrar subcarpetas ya agregadas */}
+                {newFolder.subfolders.length > 0 && (
+                  <View style={styles.subfoldersList}>
+                    <Text style={styles.subfoldersListTitle}>Subcarpetas agregadas:</Text>
+                    {newFolder.subfolders.map((subfolder, index) => (
+                      <View key={index} style={styles.subfolderItem}>
+                        <Ionicons name="folder-open" size={16} color="#f39c12" />
+                        <Text style={styles.subfolderItemText}>{subfolder}</Text>
+                        <TouchableOpacity
+                          style={styles.removeSubfolderButton}
+                          onPress={() => {
+                            setNewFolder(prev => ({
+                              ...prev,
+                              subfolders: prev.subfolders.filter((_, i) => i !== index)
+                            }));
+                          }}
+                        >
+                          <Ionicons name="close-circle" size={16} color="#e74c3c" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                )}
+                
+                {!newFolder.showSubfolderInput ? (
+                  <TouchableOpacity
+                    style={styles.addSubfolderButton}
+                    onPress={() => setNewFolder(prev => ({ ...prev, showSubfolderInput: true }))}
+                  >
+                    <Ionicons name="add-circle" size={20} color="#007AFF" />
+                    <Text style={styles.addSubfolderText}>Agregar Subcarpeta</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <View style={styles.subfolderInputContainer}>
+                    <Text style={styles.inputLabel}>Nombre de la subcarpeta</Text>
+                    <TextInput
+                      style={styles.input}
+                      placeholder="Ej: Documentos Internos"
+                      value={newFolder.subfolderName}
+                      onChangeText={(text) => setNewFolder(prev => ({ ...prev, subfolderName: text }))}
+                    />
+                    
+                    <View style={styles.subfolderActions}>
+                      <TouchableOpacity
+                        style={[styles.subfolderActionButton, styles.cancelSubfolderButton]}
+                        onPress={() => setNewFolder(prev => ({ 
+                          ...prev, 
+                          showSubfolderInput: false, 
+                          subfolderName: '',
+                          parentFolder: null
+                        }))}
+                      >
+                        <Text style={styles.cancelSubfolderText}>Cancelar</Text>
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity
+                        style={[styles.subfolderActionButton, styles.confirmSubfolderButton]}
+                        onPress={() => {
+                          if (!newFolder.subfolderName.trim()) {
+                            Alert.alert('Error', 'Por favor ingresa el nombre de la subcarpeta');
+                            return;
+                          }
+                          
+                          // Agregar la subcarpeta a la lista
+                          setNewFolder(prev => ({ 
+                            ...prev, 
+                            subfolders: [...prev.subfolders, prev.subfolderName],
+                            subfolderName: '',
+                            showSubfolderInput: false
+                          }));
+                          
+                          Alert.alert('✅ Agregada', `Subcarpeta "${newFolder.subfolderName}" agregada a la lista`);
+                        }}
+                      >
+                        <Text style={styles.confirmSubfolderText}>Crear Subcarpeta</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                )}
+              </View>
+              
               <Text style={styles.inputLabel}>Descripción</Text>
               <Text style={styles.descriptionText}>
-                Esta carpeta se creará para almacenar archivos relacionados con "{newFolder.name}"
+                {newFolder.subfolderName.trim() ? 
+                  `Esta carpeta se creará con subcarpeta "${newFolder.subfolderName}"` :
+                  'Esta carpeta se creará para almacenar archivos relacionados con "' + newFolder.name + '"'
+                }
               </Text>
               
               <View style={styles.modalActions}>
@@ -285,63 +693,144 @@ export default function CarpetasScreen() {
                   <Text style={styles.createButtonText}>Crear Carpeta</Text>
                 </TouchableOpacity>
               </View>
+            </ScrollView>
+          </View>
+        </Modal>
+
+        {/* Modal para editar carpeta */}
+        <Modal
+          visible={showEditModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowEditModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Ionicons name="create" size={24} color="#f39c12" />
+                <Text style={styles.modalTitle}>Editar Carpeta</Text>
+              </View>
+              
+              <Text style={styles.inputLabel}>Nombre de la carpeta</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ej: Documentos Básicos"
+                value={editFolder.name}
+                onChangeText={(text) => setEditFolder(prev => ({ ...prev, name: text }))}
+              />
+              
+              {/* Mostrar subcarpetas para editar si es una carpeta principal */}
+              {editingFolder && !editingFolder.parentFolder && subfoldersToEdit.length > 0 && (
+                <>
+                  <Text style={styles.inputLabel}>Subcarpetas</Text>
+                  <View style={styles.subfoldersContainer}>
+                    {console.log('🔍 Renderizando subcarpetas:', subfoldersToEdit)}
+                    {subfoldersToEdit.map((subfolder, index) => (
+                      <View key={subfolder._id} style={styles.subfolderEditItem}>
+                        <TextInput
+                          style={styles.subfolderInput}
+                          value={subfolder.name}
+                          onChangeText={(text) => {
+                            const updatedSubfolders = [...subfoldersToEdit];
+                            updatedSubfolders[index] = { ...subfolder, name: text };
+                            setSubfoldersToEdit(updatedSubfolders);
+                          }}
+                          placeholder="Nombre de la subcarpeta"
+                        />
+                      </View>
+                    ))}
+                  </View>
+                </>
+              )}
+              
+              <Text style={styles.inputLabel}>Descripción</Text>
+              <Text style={styles.descriptionText}>
+                Esta carpeta almacena archivos relacionados con "{editFolder.name}"
+              </Text>
+              
+              <View style={styles.modalActions}>
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => {
+                    setShowEditModal(false);
+                    setEditingFolder(null);
+                    setEditFolder({ name: '', files: [] });
+                  }}
+                >
+                  <Text style={styles.cancelButtonText}>Cancelar</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.editButton]}
+                  onPress={handleEditFolder}
+                >
+                  <Text style={styles.editButtonText}>Actualizar Carpeta</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-                 </Modal>
+        </Modal>
 
-         {/* Modal para editar carpeta */}
-         <Modal
-           visible={showEditModal}
-           animationType="slide"
-           transparent={true}
-           onRequestClose={() => setShowEditModal(false)}
-         >
-           <View style={styles.modalOverlay}>
-             <View style={styles.modalContent}>
-               <View style={styles.modalHeader}>
-                 <Ionicons name="create" size={24} color="#f39c12" />
-                 <Text style={styles.modalTitle}>Editar Carpeta</Text>
-               </View>
-               
-               <Text style={styles.inputLabel}>Nombre de la carpeta</Text>
-               <TextInput
-                 style={styles.input}
-                 placeholder="Ej: Documentos Básicos"
-                 value={editFolder.name}
-                 onChangeText={(text) => setEditFolder(prev => ({ ...prev, name: text }))}
-               />
-               
-               <Text style={styles.inputLabel}>Descripción</Text>
-               <Text style={styles.descriptionText}>
-                 Esta carpeta almacena archivos relacionados con "{editFolder.name}"
-               </Text>
-               
-               <View style={styles.modalActions}>
-                 <TouchableOpacity 
-                   style={[styles.modalButton, styles.cancelButton]}
-                   onPress={() => {
-                     setShowEditModal(false);
-                     setEditingFolder(null);
-                     setEditFolder({ name: '', files: [] });
-                   }}
-                 >
-                   <Text style={styles.cancelButtonText}>Cancelar</Text>
-                 </TouchableOpacity>
-                 
-                 <TouchableOpacity 
-                   style={[styles.modalButton, styles.editButton]}
-                   onPress={handleEditFolder}
-                 >
-                   <Text style={styles.editButtonText}>Actualizar Carpeta</Text>
-                 </TouchableOpacity>
-               </View>
-             </View>
-           </View>
-         </Modal>
-       </View>
-     </SafeAreaView>
-   );
- }
+        {/* Modal de selección de subcarpetas */}
+        <Modal
+          visible={showSubfolderModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setShowSubfolderModal(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Ionicons name="folder-open" size={24} color="#007AFF" />
+                <Text style={styles.modalTitle}>Seleccionar Subcarpetas para Eliminar</Text>
+              </View>
+              
+              <Text style={styles.inputLabel}>Carpeta Principal: {currentMainFolder?.name || 'N/A'}</Text>
+              <View style={styles.subfoldersContainer}>
+                {currentSubfolders.map(subfolder => (
+                  <View key={subfolder._id} style={styles.subfolderItem}>
+                    <TouchableOpacity
+                      style={styles.checkboxContainer}
+                      onPress={() => toggleSubfolderSelection(subfolder._id)}
+                    >
+                      {selectedSubfolders.includes(subfolder._id) ? (
+                        <Ionicons name="checkmark-circle" size={20} color="#27ae60" />
+                      ) : (
+                        <Ionicons name="ellipse-outline" size={20} color="#95a5a6" />
+                      )}
+                    </TouchableOpacity>
+                    <Text style={styles.subfolderItemText}>{subfolder.name}</Text>
+                  </View>
+                ))}
+              </View>
+              
+              <View style={styles.modalActions}>
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => {
+                    setShowSubfolderModal(false);
+                    setCurrentMainFolder(null);
+                    setCurrentSubfolders([]);
+                    setSelectedSubfolders([]);
+                  }}
+                >
+                  <Text style={styles.cancelButtonText}>Cancelar</Text>
+                </TouchableOpacity>
+                
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.confirmSubfolderButton]}
+                  onPress={deleteSelectedSubfolders}
+                >
+                  <Text style={styles.confirmSubfolderText}>Eliminar Seleccionadas</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      </View>
+    </SafeAreaView>
+  );
+}
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -378,6 +867,31 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 4,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  debugButton: {
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#f8f9fa',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  cleanupButton: {
+    padding: 10,
+    borderRadius: 10,
+    backgroundColor: '#f8f9fa',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   backButton: {
     padding: 10,
@@ -422,7 +936,7 @@ const styles = StyleSheet.create({
 
   foldersList: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingTop: 24,
     paddingBottom: 24,
   },
@@ -431,6 +945,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 20,
     marginBottom: 18,
+    marginHorizontal: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
@@ -471,11 +986,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    marginTop: 8,
   },
   folderStats: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 20,
+    gap: 16,
+    flex: 1,
   },
   folderStat: {
     flexDirection: 'row',
@@ -490,12 +1007,13 @@ const styles = StyleSheet.create({
   folderActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
+    marginLeft: 16,
   },
   actionButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -586,27 +1104,27 @@ const styles = StyleSheet.create({
   cancelButton: {
     backgroundColor: '#95a5a6',
   },
-     createButton: {
-     backgroundColor: '#27ae60',
-   },
-   editButton: {
-     backgroundColor: '#f39c12',
-   },
-   cancelButtonText: {
-     color: 'white',
-     fontSize: 16,
-     fontWeight: '600',
-   },
-   createButtonText: {
-     color: 'white',
-     fontSize: 16,
-     fontWeight: '600',
-   },
-   editButtonText: {
-     color: 'white',
-     fontSize: 16,
-     fontWeight: '600',
-   },
+  createButton: {
+    backgroundColor: '#27ae60',
+  },
+  editButton: {
+    backgroundColor: '#f39c12',
+  },
+  cancelButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  createButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  editButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   descriptionText: {
     fontSize: 14,
     color: '#7f8c8d',
@@ -614,5 +1132,141 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
     fontStyle: 'italic',
+  },
+  // Estilos para subcarpetas
+  subfolderSection: {
+    marginTop: 20,
+    marginBottom: 15,
+  },
+  sectionSubtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 8,
+  },
+  sectionDescription: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  addSubfolderButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#e0e0e0',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginBottom: 15,
+  },
+  addSubfolderText: {
+    fontSize: 16,
+    color: '#2c3e50',
+    marginLeft: 10,
+  },
+  subfolderInputContainer: {
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    borderRadius: 12,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    marginBottom: 20,
+  },
+  subfolderActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 15,
+  },
+  subfolderActionButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  cancelSubfolderButton: {
+    backgroundColor: '#e9ecef',
+    borderWidth: 1,
+    borderColor: '#ced4da',
+  },
+  confirmSubfolderButton: {
+    backgroundColor: '#dc3545',
+  },
+  cancelSubfolderText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6c757d',
+  },
+  confirmSubfolderText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  subfolderStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  subfoldersList: {
+    marginTop: 15,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
+  },
+  subfoldersListTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 8,
+    marginLeft: 5,
+  },
+  subfolderItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  subfolderItemText: {
+    fontSize: 16,
+    color: '#2c3e50',
+    fontWeight: '500',
+  },
+  removeSubfolderButton: {
+    padding: 5,
+  },
+  subfolderCard: {
+    marginLeft: 20, // Indentación para subcarpetas
+    borderLeftWidth: 2, // Línea izquierda para subcarpetas
+    borderLeftColor: '#e0e0e0', // Color de la línea
+  },
+  subfoldersContainer: {
+    marginTop: 10,
+    paddingHorizontal: 10,
+    paddingBottom: 10,
+  },
+  subfolderEditItem: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  subfolderInput: {
+    fontSize: 14,
+    color: '#34495e',
+    paddingVertical: 0, // Remove default padding
+  },
+  checkboxContainer: {
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
   },
 });
