@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
@@ -27,6 +28,7 @@ interface Folder {
 
 export default function UserDashboard() {
   const [folders, setFolders] = useState<Folder[]>([]);
+  const [search, setSearch] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -41,7 +43,6 @@ export default function UserDashboard() {
   useEffect(() => {
     if (user) {
       console.log('👤 Usuario en dashboard:', user);
-      console.log('🏠 Dirección del usuario:', user.direccion);
     }
   }, [user]);
 
@@ -178,7 +179,7 @@ export default function UserDashboard() {
           <View>
             <Text style={styles.welcomeText}>¡Bienvenido!</Text>
             <Text style={styles.userInfo}>
-              {user?.nombres} {user?.apellidos}
+              {user?.companyName}
             </Text>
             <Text style={styles.userRole}>
               <Ionicons name="person" size={14} color="#95a5a6" /> Usuario Regular
@@ -193,17 +194,11 @@ export default function UserDashboard() {
         <View style={styles.userInfoContainer}>
           <View style={styles.sectionHeader}>
             <Ionicons name="clipboard" size={20} color="#2c3e50" />
-            <Text style={styles.sectionTitle}>Información Personal</Text>
+            <Text style={styles.sectionTitle}>Información de la Cuenta</Text>
           </View>
           <View style={styles.infoCard}>
             <Text style={styles.infoLabel}>Email:</Text>
             <Text style={styles.infoValue}>{user?.email}</Text>
-            
-            <Text style={styles.infoLabel}>Teléfono:</Text>
-            <Text style={styles.infoValue}>{user?.telefono}</Text>
-            
-            <Text style={styles.infoLabel}>Dirección:</Text>
-            <Text style={styles.infoValue}>{user?.direccion || 'No especificada'}</Text>
             
             {/* Botón para cambiar contraseña */}
             <TouchableOpacity
@@ -222,6 +217,15 @@ export default function UserDashboard() {
             <Ionicons name="folder" size={20} color="#2c3e50" />
             <Text style={styles.sectionTitle}>Tus Carpetas Asignadas</Text>
           </View>
+          {/* Buscador */}
+          <View style={{ marginBottom: 12 }}>
+            <TextInput
+              placeholder="Buscar carpeta..."
+              value={search}
+              onChangeText={setSearch}
+              style={{ backgroundColor: 'white', borderRadius: 8, padding: 12, borderWidth: 1, borderColor: '#e1e5ea' }}
+            />
+          </View>
           
           {folders.length === 0 ? (
             <View style={styles.emptyState}>
@@ -233,7 +237,9 @@ export default function UserDashboard() {
             </View>
           ) : (
             <View style={styles.foldersGrid}>
-              {folders.map((folder) => (
+              {folders
+                .filter(f => f.name.toLowerCase().includes(search.toLowerCase()))
+                .map((folder) => (
                 <TouchableOpacity
                   key={folder._id}
                   style={styles.folderCard}

@@ -65,19 +65,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Usar los datos reales del backend
       const realUser: User = {
         _id: response._id,
-        nombres: response.nombres,
-        apellidos: response.apellidos,
-        cedula: response.cedula || '',
-        telefono: response.telefono || '',
         email: response.email,
-        direccion: response.direccion || '',
-        rol: response.rol as 'user' | 'admin',
+        companyName: response.companyName,
+        rol: response.rol as 'user' | 'admin' | 'usuario',
         folders: response.folders || [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       };
 
-      console.log('🏠 Dirección en usuario creado:', realUser.direccion);
+      
 
       const realToken = response.token;
       console.log('🔑 Token recibido:', realToken ? 'SÍ' : 'NO');

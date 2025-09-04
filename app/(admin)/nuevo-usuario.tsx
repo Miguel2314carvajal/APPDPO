@@ -31,12 +31,8 @@ export default function NuevoUsuarioScreen() {
   const [selectedFolders, setSelectedFolders] = useState<Folder[]>([]);
 
   const [formData, setFormData] = useState({
-    nombres: '',
-    apellidos: '',
-    cedula: '',
-    telefono: '',
     email: '',
-    direccion: '',
+    companyName: '',
     carpetaId: '',
   });
 
@@ -56,9 +52,8 @@ export default function NuevoUsuarioScreen() {
 
   const handleSubmit = async () => {
     // Validar campos requeridos
-    if (!formData.nombres || !formData.apellidos || !formData.cedula || 
-        !formData.telefono || !formData.email || !formData.direccion) {
-      Alert.alert('Error', 'Todos los campos son obligatorios');
+    if (!formData.email || !formData.companyName) {
+      Alert.alert('Error', 'Email y Empresa son obligatorios');
       return;
     }
 
@@ -71,7 +66,8 @@ export default function NuevoUsuarioScreen() {
     try {
       // Preparar datos con múltiples carpetas
       const userData = {
-        ...formData,
+        email: formData.email,
+        companyName: formData.companyName,
         folders: selectedFolders.map(folder => folder._id)
       };
 
@@ -113,48 +109,6 @@ export default function NuevoUsuarioScreen() {
           </View>
           
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Nombres *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ingresa los nombres"
-              value={formData.nombres}
-              onChangeText={(value) => handleInputChange('nombres', value)}
-            />
-          </View>
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Apellidos *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ingresa los apellidos"
-              value={formData.apellidos}
-              onChangeText={(value) => handleInputChange('apellidos', value)}
-            />
-          </View>
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Número de cédula *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ej: 1754864215"
-              value={formData.cedula}
-              onChangeText={(value) => handleInputChange('cedula', value)}
-              keyboardType="numeric"
-            />
-          </View>
-          
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Número de teléfono *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ej: 0987654321"
-              value={formData.telefono}
-              onChangeText={(value) => handleInputChange('telefono', value)}
-              keyboardType="phone-pad"
-            />
-          </View>
-          
-          <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Correo electrónico *</Text>
             <TextInput
               style={styles.input}
@@ -165,16 +119,14 @@ export default function NuevoUsuarioScreen() {
               autoCapitalize="none"
             />
           </View>
-          
+
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Dirección completa *</Text>
+            <Text style={styles.inputLabel}>Empresa *</Text>
             <TextInput
-              style={[styles.input, styles.textArea]}
-              placeholder="Ingresa la dirección completa"
-              value={formData.direccion}
-              onChangeText={(value) => handleInputChange('direccion', value)}
-              multiline
-              numberOfLines={3}
+              style={styles.input}
+              placeholder="Nombre de la empresa"
+              value={formData.companyName}
+              onChangeText={(value) => handleInputChange('companyName', value)}
             />
           </View>
 

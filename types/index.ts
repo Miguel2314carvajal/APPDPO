@@ -1,12 +1,8 @@
 export interface User {
   _id: string;
-  nombres: string;
-  apellidos: string;
-  cedula: string;
-  telefono: string;
   email: string;
-  direccion: string;
-  rol: 'admin' | 'user';
+  companyName: string;
+  rol: 'admin' | 'user' | 'usuario';
   folders: string[];
   createdAt: string;
   updatedAt: string;
@@ -31,15 +27,11 @@ export interface File {
 }
 
 export interface AuthResponse {
-  nombres: string;
-  apellidos: string;
+  companyName: string;
   token: string;
   _id: string;
   rol: string;
   email: string;
-  telefono: string;
-  direccion: string;
-  cedula: string;
   folders: string[];
 }
 
@@ -49,11 +41,7 @@ export interface LoginCredentials {
 }
 
 export interface RegisterUserData {
-  nombres: string;
-  apellidos: string;
-  cedula: string;
-  telefono: string;
   email: string;
-  direccion: string;
+  companyName: string;
   folders: string[];
 }
