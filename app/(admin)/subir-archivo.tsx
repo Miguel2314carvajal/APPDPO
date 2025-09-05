@@ -18,6 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { folderService } from '../../services/folderService';
 import { fileService } from '../../services/fileService';
+import { authService } from '../../services/authService';
 import * as DocumentPicker from 'expo-document-picker';
 
 interface Folder {
@@ -33,6 +34,14 @@ interface FileData {
   descripcion: string;
   carpetaId: string;
   archivo: any;
+  clienteDestinatario: string;
+}
+
+interface User {
+  _id: string;
+  email: string;
+  companyName: string;
+  rol: string;
 }
 
 export default function SubirArchivoScreen() {
@@ -46,13 +55,16 @@ export default function SubirArchivoScreen() {
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [showSubfolderModal, setShowSubfolderModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [users, setUsers] = useState<User[]>([]);
+  const [showClientSelector, setShowClientSelector] = useState(false);
   
   // Formulario de archivo
   const [fileData, setFileData] = useState<FileData>({
     nombre: '',
     descripcion: '',
     carpetaId: '',
-    archivo: null
+    archivo: null,
+    clienteDestinatario: ''
   });
 
   const { user: currentUser } = useAuth();
@@ -60,20 +72,17 @@ export default function SubirArchivoScreen() {
 
   useEffect(() => {
     loadFolders();
+    loadUsers();
   }, []);
 
   const loadFolders = async () => {
     try {
       setIsLoading(true);
       const foldersData = await folderService.listFolders();
-      console.log('📁 Carpetas cargadas:', foldersData);
       
       // Separar carpetas principales de subcarpetas
       const mainFoldersData = foldersData.filter((folder: any) => !folder.parentFolder);
       const subfoldersData = foldersData.filter((folder: any) => folder.parentFolder);
-      
-      console.log('📁 Carpetas principales:', mainFoldersData);
-      console.log('📁 Subcarpetas:', subfoldersData);
       
       setFolders(foldersData);
       setMainFolders(mainFoldersData);
@@ -83,6 +92,28 @@ export default function SubirArchivoScreen() {
       Alert.alert('Error', 'No se pudieron cargar las carpetas');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadUsers = async () => {
+    try {
+      console.log('🔄 Cargando usuarios...');
+      console.log('🔍 Usuario actual:', currentUser?.email);
+      console.log('🔑 Token disponible:', currentUser?.token ? 'SÍ' : 'NO');
+      
+      const usersData = await authService.listUsers();
+      console.log('✅ Usuarios cargados:', usersData.length);
+      console.log('📋 Datos de usuarios:', usersData);
+      
+      // Filtrar solo usuarios (no administradores)
+      const clientUsers = usersData.filter((user: User) => user.rol === 'usuario');
+      console.log('👥 Clientes encontrados:', clientUsers.length);
+      console.log('👥 Clientes filtrados:', clientUsers);
+      setUsers(clientUsers);
+    } catch (error: any) {
+      console.error('❌ Error cargando usuarios:', error);
+      console.error('❌ Error completo:', JSON.stringify(error, null, 2));
+      Alert.alert('Error', `No se pudieron cargar los usuarios: ${error.message || error}`);
     }
   };
 
@@ -153,8 +184,8 @@ export default function SubirArchivoScreen() {
   };
 
   const handleUpload = async () => {
-    if (!fileData.nombre.trim() || !fileData.descripcion.trim() || !fileData.carpetaId || !selectedFile) {
-      Alert.alert('Error', 'Por favor completa todos los campos y selecciona un archivo');
+    if (!fileData.nombre.trim() || !fileData.descripcion.trim() || !fileData.carpetaId || !selectedFile || !fileData.clienteDestinatario) {
+      Alert.alert('Error', 'Por favor completa todos los campos, selecciona un archivo y un cliente destinatario');
       return;
     }
 
@@ -166,7 +197,8 @@ export default function SubirArchivoScreen() {
         nombre: fileData.nombre,
         descripcion: fileData.descripcion,
         carpetaId: fileData.carpetaId,
-        archivo: selectedFile
+        archivo: selectedFile,
+        clienteDestinatario: fileData.clienteDestinatario
       });
       
       Alert.alert('Éxito', 'Archivo subido correctamente');
@@ -227,14 +259,26 @@ export default function SubirArchivoScreen() {
   };
 
   const resetForm = () => {
-    console.log('Limpiando formulario');
     setFileData({
       nombre: '',
       descripcion: '',
       carpetaId: '',
-      archivo: null
+      archivo: null,
+      clienteDestinatario: ''
     });
     setSelectedFile(null);
+    setShowClientSelector(false);
+  };
+
+  const handleClientSelect = (clientId: string) => {
+    setFileData(prev => ({ ...prev, clienteDestinatario: clientId }));
+    setShowClientSelector(false);
+  };
+
+  const getSelectedClientName = () => {
+    if (!fileData.clienteDestinatario) return 'Seleccionar cliente';
+    const client = users.find(u => u._id === fileData.clienteDestinatario);
+    return client ? `${client.companyName} (${client.email})` : 'Cliente seleccionado';
   };
 
   const openSubfolderModal = (mainFolder: Folder) => {
@@ -507,6 +551,64 @@ export default function SubirArchivoScreen() {
                   multiline
                   numberOfLines={3}
                 />
+                
+                {/* Cliente Destinatario */}
+                <View style={styles.clientSection}>
+                  <View style={styles.clientHeader}>
+                    <Text style={styles.inputLabel}>Cliente Destinatario *</Text>
+                    <TouchableOpacity 
+                      style={styles.reloadButton}
+                      onPress={loadUsers}
+                    >
+                      <Ionicons name="refresh" size={16} color="#27ae60" />
+                    </TouchableOpacity>
+                  </View>
+                  <TouchableOpacity 
+                    style={styles.clientSelector}
+                    onPress={() => setShowClientSelector(!showClientSelector)}
+                  >
+                    <Text style={styles.clientSelectorLabel}>
+                      {getSelectedClientName()}
+                    </Text>
+                    <Ionicons 
+                      name={showClientSelector ? "chevron-up" : "chevron-down"} 
+                      size={20} 
+                      color="#7f8c8d" 
+                    />
+                  </TouchableOpacity>
+                </View>
+                
+                {/* Lista de clientes desplegable */}
+                {showClientSelector && (
+                  <View style={styles.clientDropdown}>
+                    {users.length > 0 ? (
+                      users.map((user) => (
+                        <TouchableOpacity
+                          key={user._id}
+                          style={[
+                            styles.clientOption,
+                            fileData.clienteDestinatario === user._id && styles.selectedClientOption
+                          ]}
+                          onPress={() => handleClientSelect(user._id)}
+                        >
+                          <View style={styles.clientInfo}>
+                            <Text style={styles.clientName}>{user.companyName}</Text>
+                            <Text style={styles.clientEmail}>{user.email}</Text>
+                          </View>
+                          {fileData.clienteDestinatario === user._id && (
+                            <Ionicons name="checkmark-circle" size={20} color="#27ae60" />
+                          )}
+                        </TouchableOpacity>
+                      ))
+                    ) : (
+                      <View style={styles.noClientsMessage}>
+                        <Ionicons name="people-outline" size={24} color="#7f8c8d" />
+                        <Text style={styles.noClientsText}>No hay clientes disponibles</Text>
+                        <Text style={styles.noClientsSubtext}>Crea usuarios primero</Text>
+                      </View>
+                    )}
+                  </View>
+                )}
               </ScrollView>
 
               {/* Fixed Bottom Actions */}
@@ -1122,6 +1224,104 @@ const styles = StyleSheet.create({
   noSubfoldersHint: {
     fontSize: 14,
     color: '#7f8c8d',
+    textAlign: 'center',
+  },
+  // Estilos para selector de cliente
+  clientSection: {
+    marginBottom: 12,
+  },
+  clientHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  reloadButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  clientSelector: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 12,
+  },
+  clientSelectorLabel: {
+    fontSize: 16,
+    color: '#2c3e50',
+    flex: 1,
+  },
+  clientDropdown: {
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    borderRadius: 12,
+    marginTop: -12,
+    marginBottom: 12,
+    maxHeight: 200,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  clientOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 8,
+  },
+  selectedClientOption: {
+    backgroundColor: '#e8f5e8',
+    borderColor: '#27ae60',
+  },
+  clientInfo: {
+    flex: 1,
+  },
+  clientName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 2,
+  },
+  clientEmail: {
+    fontSize: 14,
+    color: '#7f8c8d',
+  },
+  noClientsMessage: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+  },
+  noClientsText: {
+    fontSize: 16,
+    color: '#7f8c8d',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  noClientsSubtext: {
+    fontSize: 14,
+    color: '#95a5a6',
+    marginTop: 4,
     textAlign: 'center',
   },
 });
