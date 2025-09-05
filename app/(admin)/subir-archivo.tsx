@@ -25,6 +25,7 @@ interface Folder {
   name: string;
   files: any[];
   usuarios: string[];
+  parentFolder?: string | { _id: string; name: string };
 }
 
 interface FileData {
@@ -36,10 +37,14 @@ interface FileData {
 
 export default function SubirArchivoScreen() {
   const [folders, setFolders] = useState<Folder[]>([]);
+  const [mainFolders, setMainFolders] = useState<Folder[]>([]);
+  const [subfolders, setSubfolders] = useState<Folder[]>([]);
+  const [selectedMainFolder, setSelectedMainFolder] = useState<Folder | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showSubfolderModal, setShowSubfolderModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   
   // Formulario de archivo
@@ -63,27 +68,16 @@ export default function SubirArchivoScreen() {
       const foldersData = await folderService.listFolders();
       console.log('📁 Carpetas cargadas:', foldersData);
       
-      // Debug: Ver la estructura de los archivos
-      foldersData.forEach((folder: any, index: number) => {
-        console.log(`📂 Carpeta ${index + 1}:`, folder.name);
-        if (folder.files && folder.files.length > 0) {
-          console.log(`📄 Archivos en ${folder.name}:`, folder.files);
-          folder.files.forEach((file: any, fileIndex: number) => {
-            console.log(`  📎 Archivo ${fileIndex + 1}:`, {
-              _id: file._id,
-              name: file.name,
-              nombre: file.nombre,
-              originalName: file.originalName,
-              description: file.description,
-              descripcion: file.descripcion,
-              size: file.size,
-              createdAt: file.createdAt
-            });
-          });
-        }
-      });
+      // Separar carpetas principales de subcarpetas
+      const mainFoldersData = foldersData.filter((folder: any) => !folder.parentFolder);
+      const subfoldersData = foldersData.filter((folder: any) => folder.parentFolder);
+      
+      console.log('📁 Carpetas principales:', mainFoldersData);
+      console.log('📁 Subcarpetas:', subfoldersData);
       
       setFolders(foldersData);
+      setMainFolders(mainFoldersData);
+      setSubfolders(subfoldersData);
     } catch (error: any) {
       console.error('Error cargando carpetas:', error);
       Alert.alert('Error', 'No se pudieron cargar las carpetas');
@@ -243,6 +237,12 @@ export default function SubirArchivoScreen() {
     setSelectedFile(null);
   };
 
+  const openSubfolderModal = (mainFolder: Folder) => {
+    console.log('Abriendo modal de subcarpetas para:', mainFolder.name);
+    setSelectedMainFolder(mainFolder);
+    setShowSubfolderModal(true);
+  };
+
   const openUploadModal = (carpetaId?: string) => {
     console.log('Abriendo modal con carpetaId:', carpetaId);
     // Limpiar archivo seleccionado primero
@@ -261,6 +261,29 @@ export default function SubirArchivoScreen() {
       resetForm();
     }
     setShowUploadModal(true);
+  };
+
+  const getSubfoldersForMainFolder = (mainFolderId: string) => {
+    return subfolders.filter(subfolder => {
+      const parentId = typeof subfolder.parentFolder === 'string' 
+        ? subfolder.parentFolder 
+        : subfolder.parentFolder?._id;
+      return parentId === mainFolderId;
+    });
+  };
+
+  const getTotalFilesInFolder = (folderId: string) => {
+    const folder = folders.find(f => f._id === folderId);
+    return folder?.files?.length || 0;
+  };
+
+  const getTotalFilesInMainFolder = (mainFolder: Folder) => {
+    const mainFolderFiles = getTotalFilesInFolder(mainFolder._id);
+    const subfoldersForMain = getSubfoldersForMainFolder(mainFolder._id);
+    const subfolderFiles = subfoldersForMain.reduce((total, subfolder) => {
+      return total + getTotalFilesInFolder(subfolder._id);
+    }, 0);
+    return mainFolderFiles + subfolderFiles;
   };
 
   const getFileIcon = (fileName: string) => {
@@ -367,14 +390,14 @@ export default function SubirArchivoScreen() {
 
 
 
-        {/* Lista de carpetas con archivos */}
+        {/* Lista de carpetas principales */}
         <ScrollView 
           style={styles.foldersList}
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={refreshFolders} />
           }
         >
-          {folders.length === 0 ? (
+          {mainFolders.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={styles.emptyStateIcon}>📁</Text>
               <Text style={styles.emptyStateTitle}>No hay carpetas</Text>
@@ -389,79 +412,37 @@ export default function SubirArchivoScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            folders.map((folder) => (
-              <View key={folder._id} style={styles.folderCard}>
-                <View style={styles.folderHeader}>
-                  <Text style={styles.folderIcon}>📁</Text>
-                  <View style={styles.folderInfo}>
-                    <Text style={styles.folderName}>{folder.name}</Text>
-                    <Text style={styles.folderDescription}>{folder.name}</Text>
-                    <Text style={styles.folderStats}>
-                      📄 {folder.files?.length || 0} archivos
-                    </Text>
+            mainFolders.map((folder) => {
+              const subfoldersForMain = getSubfoldersForMainFolder(folder._id);
+              const totalFiles = getTotalFilesInMainFolder(folder);
+              
+              return (
+                <View key={folder._id} style={styles.folderCard}>
+                  <View style={styles.folderHeader}>
+                    <Text style={styles.folderIcon}>📁</Text>
+                    <View style={styles.folderInfo}>
+                      <Text style={styles.folderName}>{folder.name}</Text>
+                      <Text style={styles.folderDescription}>{folder.name}</Text>
+                      <Text style={styles.folderStats}>
+                        📄 {totalFiles} archivos • 📁 {subfoldersForMain.length} subcarpetas
+                      </Text>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.folderActions}>
+                    <TouchableOpacity 
+                      style={styles.enterFolderButton}
+                      onPress={() => openSubfolderModal(folder)}
+                    >
+                      <View style={styles.enterFolderButtonContent}>
+                        <Ionicons name="folder-open" size={20} color="white" />
+                        <Text style={styles.enterFolderText}>Entrar a carpeta</Text>
+                      </View>
+                    </TouchableOpacity>
                   </View>
                 </View>
-                
-                {/* Archivos en la carpeta */}
-                {folder.files && folder.files.length > 0 ? (
-                  <View style={styles.filesContainer}>
-                    <Text style={styles.filesTitle}>Archivos en esta carpeta:</Text>
-                    {folder.files.map((file: any, index: number) => (
-                      <View key={index} style={styles.fileItem}>
-                        <Text style={styles.fileIcon}>
-                          {getFileIcon(getFileName(file))}
-                        </Text>
-                        <View style={styles.fileInfo}>
-                          <Text style={styles.fileName}>
-                            {getFileName(file)}
-                          </Text>
-                          <Text style={styles.fileDescription}>
-                            {getFileDescription(file)}
-                          </Text>
-                          <Text style={styles.fileDetails}>
-                            {file.size ? formatFileSize(file.size) : ''} • 
-                            {new Date(file.createdAt || file.uploadDate).toLocaleDateString('es-ES')}
-                          </Text>
-                        </View>
-                        <TouchableOpacity 
-                          style={styles.deleteFileButton}
-                          onPress={() => handleDeleteFile(file._id, folder._id)}
-                        >
-                          <Ionicons name="trash" size={20} color="#e74c3c" />
-                        </TouchableOpacity>
-                      </View>
-                    ))}
-                    
-                    {/* Botón para agregar más archivos */}
-                    <TouchableOpacity 
-                      style={styles.addMoreFilesButton}
-                      onPress={() => openUploadModal(folder._id)}
-                    >
-                      <View style={styles.addMoreButtonContent}>
-                        <Ionicons name="add" size={20} color="white" />
-                        <Text style={styles.addMoreFilesText}>Agregar más archivos</Text>
-                      </View>
-                    </TouchableOpacity>
-                  </View>
-                ) : (
-                  <View style={styles.noFilesContainer}>
-                    <Text style={styles.noFilesText}>📄 No hay archivos en esta carpeta</Text>
-                    <TouchableOpacity 
-                      style={styles.uploadHereButton}
-                      onPress={() => openUploadModal(folder._id)}
-                    >
-                      <View style={styles.uploadHereButtonContent}>
-                        <Ionicons name="cloud-upload" size={20} color="white" />
-                        <Text style={styles.uploadHereText}>Subir primer archivo</Text>
-                      </View>
-                    </TouchableOpacity>
-                    <Text style={styles.uploadHintText}>
-                      💡 Después podrás agregar más archivos aquí
-                    </Text>
-                  </View>
-                )}
-              </View>
-            ))
+              );
+            })
           )}
         </ScrollView>
 
@@ -550,6 +531,107 @@ export default function SubirArchivoScreen() {
                   ) : (
                     <Text style={styles.uploadButtonText}>Subir Archivo</Text>
                   )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Modal para seleccionar subcarpetas */}
+        <Modal
+          visible={showSubfolderModal}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => {
+            setShowSubfolderModal(false);
+            setSelectedMainFolder(null);
+          }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.subfolderModalContainer}>
+              {/* Modal Header */}
+              <View style={styles.modalHeader}>
+                <Ionicons name="folder-open" size={24} color="#3498db" />
+                <Text style={styles.modalTitle}>
+                  {selectedMainFolder?.name} - Subcarpetas
+                </Text>
+              </View>
+
+              {/* Subcarpetas */}
+              <ScrollView style={styles.subfolderList} showsVerticalScrollIndicator={false}>
+                {/* Opción para subir directamente a la carpeta principal */}
+                <TouchableOpacity 
+                  style={styles.subfolderItem}
+                  onPress={() => {
+                    setShowSubfolderModal(false);
+                    openUploadModal(selectedMainFolder?._id);
+                  }}
+                >
+                  <View style={styles.subfolderItemContent}>
+                    <Text style={styles.subfolderIcon}>📁</Text>
+                    <View style={styles.subfolderInfo}>
+                      <Text style={styles.subfolderName}>{selectedMainFolder?.name} (Principal)</Text>
+                      <Text style={styles.subfolderDescription}>
+                        Subir directamente a la carpeta principal
+                      </Text>
+                      <Text style={styles.subfolderStats}>
+                        📄 {getTotalFilesInFolder(selectedMainFolder?._id || '')} archivos
+                      </Text>
+                    </View>
+                    <Ionicons name="chevron-forward" size={20} color="#95a5a6" />
+                  </View>
+                </TouchableOpacity>
+
+                {/* Lista de subcarpetas */}
+                {selectedMainFolder && getSubfoldersForMainFolder(selectedMainFolder._id).map((subfolder) => (
+                  <TouchableOpacity 
+                    key={subfolder._id}
+                    style={styles.subfolderItem}
+                    onPress={() => {
+                      setShowSubfolderModal(false);
+                      openUploadModal(subfolder._id);
+                    }}
+                  >
+                    <View style={styles.subfolderItemContent}>
+                      <Text style={styles.subfolderIcon}>📂</Text>
+                      <View style={styles.subfolderInfo}>
+                        <Text style={styles.subfolderName}>{subfolder.name}</Text>
+                        <Text style={styles.subfolderDescription}>
+                          Subcarpeta de {selectedMainFolder.name}
+                        </Text>
+                        <Text style={styles.subfolderStats}>
+                          📄 {getTotalFilesInFolder(subfolder._id)} archivos
+                        </Text>
+                      </View>
+                      <Ionicons name="chevron-forward" size={20} color="#95a5a6" />
+                    </View>
+                  </TouchableOpacity>
+                ))}
+
+                {/* Mensaje si no hay subcarpetas */}
+                {selectedMainFolder && getSubfoldersForMainFolder(selectedMainFolder._id).length === 0 && (
+                  <View style={styles.noSubfoldersContainer}>
+                    <Text style={styles.noSubfoldersIcon}>📂</Text>
+                    <Text style={styles.noSubfoldersText}>
+                      No hay subcarpetas en {selectedMainFolder.name}
+                    </Text>
+                    <Text style={styles.noSubfoldersHint}>
+                      Puedes subir archivos directamente a la carpeta principal
+                    </Text>
+                  </View>
+                )}
+              </ScrollView>
+
+              {/* Modal Actions */}
+              <View style={styles.modalActions}>
+                <TouchableOpacity 
+                  style={[styles.modalButton, styles.cancelButton]}
+                  onPress={() => {
+                    setShowSubfolderModal(false);
+                    setSelectedMainFolder(null);
+                  }}
+                >
+                  <Text style={styles.cancelButtonText}>Cancelar</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -942,5 +1024,104 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  folderActions: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f3f4',
+  },
+  enterFolderButton: {
+    backgroundColor: '#3498db',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  enterFolderButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  enterFolderText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 10,
+  },
+  subfolderModalContainer: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    margin: 20,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
+    flex: 1,
+    maxHeight: '80%',
+  },
+  subfolderList: {
+    flex: 1,
+    marginBottom: 20,
+  },
+  subfolderItem: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  subfolderItemContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  subfolderIcon: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  subfolderInfo: {
+    flex: 1,
+  },
+  subfolderName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 4,
+  },
+  subfolderDescription: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    marginBottom: 4,
+  },
+  subfolderStats: {
+    fontSize: 12,
+    color: '#95a5a6',
+  },
+  noSubfoldersContainer: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  noSubfoldersIcon: {
+    fontSize: 48,
+    marginBottom: 16,
+  },
+  noSubfoldersText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  noSubfoldersHint: {
+    fontSize: 14,
+    color: '#7f8c8d',
+    textAlign: 'center',
   },
 });
