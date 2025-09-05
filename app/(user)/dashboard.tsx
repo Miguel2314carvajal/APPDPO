@@ -22,6 +22,7 @@ interface Folder {
   name: string;
   files: any[];
   usuarios: string[];
+  parentFolder?: string | { _id: string; name: string };
   createdAt: string;
   updatedAt: string;
 }
@@ -71,10 +72,14 @@ export default function UserDashboard() {
           })
         );
         
-        // Filtrar carpetas válidas
+        // Filtrar carpetas válidas y solo mostrar carpetas principales (sin parentFolder)
         const validFolders = userFolders.filter(folder => folder !== null);
+        const mainFolders = validFolders.filter(folder => 
+          !folder.parentFolder || folder.parentFolder === null
+        );
         console.log('📊 Carpetas válidas encontradas:', validFolders.length);
-        setFolders(validFolders);
+        console.log('📁 Carpetas principales (sin subcarpetas):', mainFolders.length);
+        setFolders(mainFolders);
       } else {
         console.log('⚠️ Usuario no tiene carpetas asignadas, intentando sincronizar...');
         
@@ -105,8 +110,12 @@ export default function UserDashboard() {
             );
             
             const validFolders = userFolders.filter(folder => folder !== null);
+            const mainFolders = validFolders.filter(folder => 
+              !folder.parentFolder || folder.parentFolder === null
+            );
             console.log('📊 Carpetas válidas después de sincronización:', validFolders.length);
-            setFolders(validFolders);
+            console.log('📁 Carpetas principales después de sincronización:', mainFolders.length);
+            setFolders(mainFolders);
           } else {
             console.log('⚠️ No se encontraron carpetas después de sincronizar');
             setFolders([]);
@@ -153,8 +162,12 @@ export default function UserDashboard() {
   };
 
   const openFolder = (folder: Folder) => {
-    // Navegar a la pantalla de detalle de carpeta
-    (navigation as any).navigate('CarpetaDetalle', { folderId: folder._id });
+    // Navegar a la pantalla de detalle de carpeta con navegación jerárquica
+    (navigation as any).navigate('CarpetaDetalle', { 
+      folderId: folder._id,
+      folderName: folder.name,
+      isMainFolder: true
+    });
   };
 
   if (isLoading) {

@@ -69,10 +69,8 @@ export default function UsuariosScreen() {
     }
 
     const filtered = users.filter(user => 
-      user.nombres.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.apellidos.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.telefono.includes(searchQuery)
+      user.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchQuery.toLowerCase())
     );
     setFilteredUsers(filtered);
   };
@@ -80,7 +78,7 @@ export default function UsuariosScreen() {
   const handleDeleteUser = (user: User) => {
     Alert.alert(
       'Eliminar Usuario',
-      `¿Estás seguro de que quieres eliminar a ${user.nombres} ${user.apellidos}?`,
+      `¿Estás seguro de que quieres eliminar a ${user.companyName}?`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -88,7 +86,7 @@ export default function UsuariosScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await authService.deleteUser(user.cedula);
+              await authService.deleteUser(user._id);
               Alert.alert('Éxito', 'Usuario eliminado correctamente');
               loadUsers(); // Recargar lista
             } catch (error: any) {
@@ -103,7 +101,7 @@ export default function UsuariosScreen() {
   };
 
   const handleEditUser = (user: User) => {
-    (navigation as any).navigate('EditarUsuario', { cedula: user.cedula });
+    (navigation as any).navigate('EditarUsuario', { userId: user._id });
   };
 
   const formatDate = (dateString: string) => {

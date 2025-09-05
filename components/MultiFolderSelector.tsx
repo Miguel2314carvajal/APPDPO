@@ -17,6 +17,7 @@ interface Folder {
   name: string;
   files: any[];
   usuarios: string[];
+  parentFolder?: string | { _id: string; name: string };
   createdAt: string;
   updatedAt: string;
 }
@@ -56,9 +57,15 @@ export default function MultiFolderSelector({
       const foldersData = await folderService.listFolders();
       console.log('✅ Carpetas cargadas:', foldersData);
       console.log('📊 Número de carpetas:', foldersData.length);
-      setFolders(foldersData);
+      
+      // Filtrar solo carpetas principales (sin parentFolder)
+      const mainFolders = foldersData.filter((folder: any) => !folder.parentFolder);
+      console.log('📁 Carpetas principales:', mainFolders.length);
+      console.log('📁 Carpetas principales:', mainFolders.map(f => f.name));
+      
+      setFolders(mainFolders);
       // Inicializar filteredFolders inmediatamente
-      setFilteredFolders(foldersData);
+      setFilteredFolders(mainFolders);
     } catch (error: any) {
       console.error('❌ Error cargando carpetas:', error);
       if (error.response) {

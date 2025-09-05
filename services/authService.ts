@@ -72,10 +72,20 @@ export const authService = {
     }
   },
 
-  // Actualizar usuario (solo admin)
-  updateUser: async (cedula: string, userData: UpdateUserData): Promise<any> => {
+  // Obtener usuario por ID (solo admin)
+  getUserById: async (userId: string): Promise<any> => {
     try {
-      const response = await api.put(`/api/users/actualizar/${cedula}`, userData);
+      const response = await api.get(`/api/users/${userId}`);
+      return response.data;
+    } catch (error: any) {
+      throw error.response?.data || { mensaje: 'Error al obtener usuario' };
+    }
+  },
+
+  // Actualizar usuario (solo admin)
+  updateUser: async (userId: string, userData: UpdateUserData): Promise<any> => {
+    try {
+      const response = await api.put(`/api/users/actualizar/${userId}`, userData);
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { mensaje: 'Error al actualizar usuario' };
@@ -83,9 +93,9 @@ export const authService = {
   },
 
   // Eliminar usuario (solo admin)
-  deleteUser: async (cedula: string): Promise<any> => {
+  deleteUser: async (userId: string): Promise<any> => {
     try {
-      const response = await api.delete(`/api/users/eliminar/${cedula}`);
+      const response = await api.delete(`/api/users/eliminar/${userId}`);
       return response.data;
     } catch (error: any) {
       throw error.response?.data || { mensaje: 'Error al eliminar usuario' };

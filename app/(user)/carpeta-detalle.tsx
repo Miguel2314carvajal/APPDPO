@@ -38,12 +38,14 @@ interface Folder {
   name: string;
   files: File[];
   usuarios: string[];
+  parentFolder?: string | { _id: string; name: string };
   createdAt: string;
   updatedAt: string;
 }
 
 export default function CarpetaDetalle() {
   const [folder, setFolder] = useState<Folder | null>(null);
+  const [subfolders, setSubfolders] = useState<Folder[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showPDFViewer, setShowPDFViewer] = useState(false);
@@ -51,7 +53,11 @@ export default function CarpetaDetalle() {
 
   const navigation = useNavigation();
   const route = useRoute();
-  const { folderId } = route.params as { folderId: string };
+  const { folderId, folderName, isMainFolder } = route.params as { 
+    folderId: string; 
+    folderName?: string; 
+    isMainFolder?: boolean; 
+  };
 
   useEffect(() => {
     loadFolderDetails();
@@ -66,6 +72,20 @@ export default function CarpetaDetalle() {
       console.log('✅ Carpeta cargada:', folderData.name, 'Archivos:', folderData.files?.length || 0);
       
       setFolder(folderData);
+      
+      // Si es una carpeta principal, cargar sus subcarpetas
+      if (isMainFolder) {
+        console.log('📁 Cargando subcarpetas para:', folderData.name);
+        const allFolders = await folderService.listFolders();
+        const subfoldersData = allFolders.filter((f: any) => {
+          const parentId = typeof f.parentFolder === 'string' 
+            ? f.parentFolder 
+            : f.parentFolder?._id;
+          return parentId === folderId;
+        });
+        console.log('📂 Subcarpetas encontradas:', subfoldersData.length);
+        setSubfolders(subfoldersData);
+      }
     } catch (error) {
       console.error('❌ Error cargando carpeta:', error);
       Alert.alert('Error', 'No se pudo cargar la carpeta');
@@ -97,6 +117,15 @@ export default function CarpetaDetalle() {
     if (mimeType.includes('excel') || mimeType.includes('spreadsheet')) return 'grid';
     if (mimeType.includes('powerpoint') || mimeType.includes('presentation')) return 'easel';
     return 'document';
+  };
+
+  const openSubfolder = (subfolder: Folder) => {
+    // Navegar a la subcarpeta
+    (navigation as any).navigate('CarpetaDetalle', { 
+      folderId: subfolder._id,
+      folderName: subfolder.name,
+      isMainFolder: false
+    });
   };
 
   const requestStoragePermission = async () => {
@@ -409,6 +438,36 @@ export default function CarpetaDetalle() {
         </View>
       </View>
 
+      {/* Subcarpetas (solo si es carpeta principal) */}
+      {isMainFolder && subfolders.length > 0 && (
+        <View style={styles.subfoldersContainer}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="folder-open" size={20} color="#27ae60" />
+            <Text style={styles.sectionTitle}>Subcarpetas</Text>
+          </View>
+          
+          {subfolders.map((subfolder) => (
+            <TouchableOpacity
+              key={subfolder._id}
+              style={styles.subfolderCard}
+              onPress={() => openSubfolder(subfolder)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.subfolderContent}>
+                <Ionicons name="folder" size={24} color="#27ae60" />
+                <View style={styles.subfolderInfo}>
+                  <Text style={styles.subfolderName}>{subfolder.name}</Text>
+                  <Text style={styles.subfolderFiles}>
+                    {subfolder.files?.length || 0} archivos
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#95a5a6" />
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+
       {/* Lista de archivos */}
       <View style={styles.filesContainer}>
         <View style={styles.sectionHeader}>
@@ -702,5 +761,38 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#495057',
+  },
+  subfoldersContainer: {
+    padding: 20,
+    paddingBottom: 0,
+  },
+  subfolderCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  subfolderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+  },
+  subfolderInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  subfolderName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 4,
+  },
+  subfolderFiles: {
+    fontSize: 14,
+    color: '#7f8c8d',
   },
 });

@@ -35,6 +35,7 @@ interface Folder {
   name: string;
   files: any[];
   usuarios: string[];
+  parentFolder?: string | { _id: string; name: string };
   createdAt: string;
   updatedAt: string;
 }
@@ -42,7 +43,7 @@ interface Folder {
 export default function EditarUsuarioScreen() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { cedula } = route.params as { cedula: string };
+  const { userId } = route.params as { userId: string };
 
   const [user, setUser] = useState<User | null>(null);
   const [folders, setFolders] = useState<Folder[]>([]);
@@ -51,18 +52,15 @@ export default function EditarUsuarioScreen() {
   const [isSaving, setIsSaving] = useState(false);
 
   const [formData, setFormData] = useState({
-    nombres: '',
-    apellidos: '',
     email: '',
-    cedula: '',
-    telefono: '',
-    direccion: '',
+    companyName: '',
+    maxSessions: 3,
     rol: 'usuario',
   });
 
   useEffect(() => {
     loadUserAndFolders();
-  }, [cedula]);
+  }, [userId]);
 
   const loadUserAndFolders = async () => {
     try {
@@ -70,7 +68,7 @@ export default function EditarUsuarioScreen() {
       
       // Cargar usuario y carpetas en paralelo
       const [userData, foldersData] = await Promise.all([
-        authService.getUserByCedula(cedula),
+        authService.getUserById(userId),
         folderService.listFolders()
       ]);
 
@@ -79,12 +77,9 @@ export default function EditarUsuarioScreen() {
 
       // Llenar formulario con datos del usuario
       setFormData({
-        nombres: userData.nombres || '',
-        apellidos: userData.apellidos || '',
         email: userData.email || '',
-        cedula: userData.cedula || '',
-        telefono: userData.telefono || '',
-        direccion: userData.direccion || '',
+        companyName: userData.companyName || '',
+        maxSessions: userData.maxSessions || 3,
         rol: userData.rol || 'usuario',
       });
 
@@ -112,8 +107,7 @@ export default function EditarUsuarioScreen() {
 
   const handleSave = async () => {
     // Validar campos requeridos
-    if (!formData.nombres || !formData.apellidos || !formData.email || 
-        !formData.cedula || !formData.telefono || !formData.direccion) {
+    if (!formData.email || !formData.companyName) {
       Alert.alert('Error', 'Todos los campos son obligatorios');
       return;
     }
@@ -131,7 +125,7 @@ export default function EditarUsuarioScreen() {
         folders: selectedFolders.map(folder => folder._id)
       };
 
-      await authService.updateUser(cedula, updateData);
+      await authService.updateUser(userId, updateData);
 
       Alert.alert(
         'Éxito', 
@@ -152,7 +146,7 @@ export default function EditarUsuarioScreen() {
 
     Alert.alert(
       'Eliminar Usuario',
-      `¿Estás seguro de que quieres eliminar a ${user.nombres} ${user.apellidos}?\n\nEsta acción no se puede deshacer.`,
+      `¿Estás seguro de que quieres eliminar a ${user.companyName}?\n\nEsta acción no se puede deshacer.`,
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -161,7 +155,7 @@ export default function EditarUsuarioScreen() {
           onPress: async () => {
             try {
               setIsSaving(true);
-              await authService.deleteUser(cedula);
+              await authService.deleteUser(userId);
               Alert.alert(
                 'Éxito', 
                 'Usuario eliminado correctamente',

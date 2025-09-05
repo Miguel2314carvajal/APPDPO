@@ -17,6 +17,7 @@ interface Folder {
   name: string;
   files: any[];
   usuarios: string[];
+  parentFolder?: string | { _id: string; name: string };
   createdAt: string;
   updatedAt: string;
 }
@@ -45,7 +46,9 @@ export default function FolderSelector({
     try {
       setIsLoading(true);
       const data = await folderService.listFolders();
-      setFolders(data || []);
+      // Filtrar solo carpetas principales (sin parentFolder)
+      const mainFolders = data.filter((folder: any) => !folder.parentFolder);
+      setFolders(mainFolders || []);
     } catch (error) {
       console.error('Error cargando carpetas:', error);
       Alert.alert('Error', 'No se pudieron cargar las carpetas');
