@@ -20,12 +20,9 @@ import MultiFolderSelector from '../../components/MultiFolderSelector';
 
 interface User {
   _id: string;
-  nombres: string;
-  apellidos: string;
   email: string;
-  cedula: string;
-  telefono: string;
-  direccion: string;
+  companyName: string;
+  maxSessions: number;
   rol: string;
   folders: string[];
 }
@@ -112,7 +109,8 @@ export default function EditarUsuarioScreen() {
       return;
     }
 
-    if (selectedFolders.length === 0) {
+    // Solo validar carpetas para usuarios regulares
+    if (formData.rol === 'usuario' && selectedFolders.length === 0) {
       Alert.alert('Error', 'Debes seleccionar al menos una carpeta para el usuario');
       return;
     }
@@ -122,14 +120,19 @@ export default function EditarUsuarioScreen() {
 
       const updateData = {
         ...formData,
-        folders: selectedFolders.map(folder => folder._id)
+        // Solo incluir carpetas para usuarios regulares
+        ...(formData.rol === 'usuario' && { folders: selectedFolders.map(folder => folder._id) })
       };
 
       await authService.updateUser(userId, updateData);
 
+      const successMessage = formData.rol === 'usuario' 
+        ? `Usuario actualizado correctamente con acceso a ${selectedFolders.length} carpeta${selectedFolders.length !== 1 ? 's' : ''}`
+        : 'Usuario actualizado correctamente como administrador';
+        
       Alert.alert(
         'Éxito', 
-        `Usuario actualizado correctamente con acceso a ${selectedFolders.length} carpeta${selectedFolders.length !== 1 ? 's' : ''}`,
+        successMessage,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } catch (error: any) {
@@ -230,48 +233,6 @@ export default function EditarUsuarioScreen() {
         </View>
         
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Nombres *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ingresa los nombres"
-            value={formData.nombres}
-            onChangeText={(value) => handleInputChange('nombres', value)}
-          />
-        </View>
-        
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Apellidos *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ingresa los apellidos"
-            value={formData.apellidos}
-            onChangeText={(value) => handleInputChange('apellidos', value)}
-          />
-        </View>
-        
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Número de cédula *</Text>
-          <TextInput
-            style={[styles.input, styles.disabledInput]}
-            placeholder="Número de cédula"
-            value={formData.cedula}
-            editable={false}
-          />
-          <Text style={styles.disabledNote}>La cédula no se puede modificar</Text>
-        </View>
-        
-        <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Número de teléfono *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ej: 0987654321"
-            value={formData.telefono}
-            onChangeText={(value) => handleInputChange('telefono', value)}
-            keyboardType="phone-pad"
-          />
-        </View>
-        
-        <View style={styles.inputGroup}>
           <Text style={styles.inputLabel}>Correo electrónico *</Text>
           <TextInput
             style={styles.input}
@@ -284,14 +245,12 @@ export default function EditarUsuarioScreen() {
         </View>
         
         <View style={styles.inputGroup}>
-          <Text style={styles.inputLabel}>Dirección completa *</Text>
+          <Text style={styles.inputLabel}>Empresa *</Text>
           <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Ingresa la dirección completa"
-            value={formData.direccion}
-            onChangeText={(value) => handleInputChange('direccion', value)}
-            multiline
-            numberOfLines={3}
+            style={styles.input}
+            placeholder="Nombre de la empresa"
+            value={formData.companyName}
+            onChangeText={(value) => handleInputChange('companyName', value)}
           />
         </View>
 
@@ -346,20 +305,51 @@ export default function EditarUsuarioScreen() {
           </View>
         </View>
 
-        <View style={styles.sectionHeader}>
-          <Ionicons name="folder" size={24} color="#007AFF" />
-          <Text style={styles.sectionTitle}>Asignación de Carpetas</Text>
-        </View>
+        {/* Límite de Sesiones - Solo para usuarios regulares */}
+        {formData.rol === 'usuario' && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Límite de Sesiones</Text>
+            <View style={styles.sessionSelector}>
+              {[1, 2, 3].map((limit) => (
+                <TouchableOpacity
+                  key={limit}
+                  style={[
+                    styles.sessionOption,
+                    formData.maxSessions === limit && styles.selectedSession
+                  ]}
+                  onPress={() => handleInputChange('maxSessions', limit.toString())}
+                >
+                  <Text style={[
+                    styles.sessionText,
+                    formData.maxSessions === limit && styles.selectedSessionText
+                  ]}>
+                    {limit} {limit === 1 ? 'dispositivo' : 'dispositivos'}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
 
-        {/* Selector de Carpeta */}
-        <View style={styles.folderSelectorContainer}>
-          <Text style={styles.inputLabel}>Carpetas Asignadas *</Text>
-          <MultiFolderSelector
-            selectedFolders={selectedFolders}
-            onFoldersSelect={handleFoldersSelect}
-            placeholder="Seleccionar carpetas"
-          />
-        </View>
+        {/* Asignación de Carpetas - Solo para usuarios regulares */}
+        {formData.rol === 'usuario' && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Ionicons name="folder" size={24} color="#007AFF" />
+              <Text style={styles.sectionTitle}>Asignación de Carpetas</Text>
+            </View>
+
+            {/* Selector de Carpeta */}
+            <View style={styles.folderSelectorContainer}>
+              <Text style={styles.inputLabel}>Carpetas Asignadas *</Text>
+              <MultiFolderSelector
+                selectedFolders={selectedFolders}
+                onFoldersSelect={handleFoldersSelect}
+                placeholder="Seleccionar carpetas"
+              />
+            </View>
+          </>
+        )}
 
         <View style={styles.infoBox}>
           <Ionicons name="information-circle" size={20} color="#007AFF" />
@@ -367,9 +357,18 @@ export default function EditarUsuarioScreen() {
             <Text style={styles.infoTitle}>Información importante:</Text>
             <Text style={styles.infoText}>
               • Los cambios se aplicarán inmediatamente{'\n'}
-              • El usuario mantendrá acceso a todas las carpetas seleccionadas{'\n'}
-              • Puedes seleccionar múltiples carpetas usando los checkboxes{'\n'}
-              • La cédula no se puede modificar por seguridad
+              {formData.rol === 'usuario' ? (
+                <>
+                  • El usuario mantendrá acceso a todas las carpetas seleccionadas{'\n'}
+                  • Puedes seleccionar múltiples carpetas usando los checkboxes{'\n'}
+                </>
+              ) : (
+                <>
+                  • Los administradores tienen acceso completo al sistema{'\n'}
+                  • No necesitan asignación de carpetas específicas{'\n'}
+                </>
+              )}
+              • El límite de sesiones controla cuántos dispositivos pueden usar simultáneamente
             </Text>
           </View>
         </View>
@@ -574,6 +573,34 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   selectedRoleText: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  sessionSelector: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  sessionOption: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 8,
+    padding: 12,
+    marginHorizontal: 4,
+  },
+  selectedSession: {
+    borderColor: '#007AFF',
+    backgroundColor: '#f0f8ff',
+  },
+  sessionText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+  },
+  selectedSessionText: {
     color: '#007AFF',
     fontWeight: '600',
   },
