@@ -73,8 +73,6 @@ export default function CarpetasScreen() {
       setIsLoading(true);
       const foldersData = await folderService.listFolders();
       
-      console.log('📁 Todas las carpetas cargadas:', foldersData);
-      
       // Ordenar carpetas: primero las principales, luego las subcarpetas
       const sortedFolders = foldersData.sort((a, b) => {
         // Si ambas son principales o ambas son subcarpetas, ordenar por nombre
@@ -87,10 +85,7 @@ export default function CarpetasScreen() {
         return 0;
       });
       
-      console.log('📁 Carpetas ordenadas:', sortedFolders);
-      
       const mainFolders = sortedFolders.filter(folder => !folder.parentFolder);
-      console.log('📁 Solo carpetas principales:', mainFolders);
       
       setAllFolders(sortedFolders);
       setFolders(mainFolders); // Solo carpetas principales
@@ -123,17 +118,13 @@ export default function CarpetasScreen() {
         files: []
       };
 
-      console.log('📁 Creando carpeta principal:', mainFolderData);
       const mainFolder = await folderService.createFolder(mainFolderData);
-      console.log('✅ Carpeta principal creada:', mainFolder);
       
       // Extraer el ID de la respuesta anidada del backend
       const mainFolderId = mainFolder.folder?._id || mainFolder._id;
-      console.log('🆔 ID de la carpeta principal:', mainFolderId);
       
       // Crear todas las subcarpetas agregadas
       if (newFolder.subfolders.length > 0) {
-        console.log('📁 Creando subcarpetas:', newFolder.subfolders);
         for (const subfolderName of newFolder.subfolders) {
           const subfolderData = {
             name: subfolderName,
@@ -141,10 +132,7 @@ export default function CarpetasScreen() {
             files: []
           };
           
-          console.log('📁 Creando subcarpeta:', subfolderData);
-          console.log('🔗 parentFolder ID:', mainFolderId);
           const subfolder = await folderService.createFolder(subfolderData);
-          console.log('✅ Subcarpeta creada:', subfolder);
         }
         
         Alert.alert('✅ Éxito', `Carpeta "${newFolder.name}" creada con ${newFolder.subfolders.length} subcarpeta${newFolder.subfolders.length > 1 ? 's' : ''}`);
@@ -180,13 +168,10 @@ export default function CarpetasScreen() {
       
       // Si es una carpeta principal y tiene subcarpetas, actualizarlas también
       if (!editingFolder.parentFolder && subfoldersToEdit.length > 0) {
-        console.log('🔄 Actualizando subcarpetas:', subfoldersToEdit);
-        
         // Actualizar cada subcarpeta
         for (const subfolder of subfoldersToEdit) {
           try {
             await folderService.updateFolder(subfolder._id, { name: subfolder.name });
-            console.log(`✅ Subcarpeta "${subfolder.name}" actualizada`);
           } catch (error) {
             console.error(`❌ Error actualizando subcarpeta "${subfolder.name}":`, error);
           }
@@ -227,7 +212,6 @@ export default function CarpetasScreen() {
         return false;
       });
       setSubfoldersToEdit(subfolders);
-      console.log('📁 Subcarpetas encontradas para editar:', subfolders);
     } else {
       setSubfoldersToEdit([]);
     }
@@ -296,21 +280,16 @@ export default function CarpetasScreen() {
           return false;
         });
         
-        console.log('🗑️ Eliminando subcarpetas:', subfolders);
-        
         for (const subfolder of subfolders) {
           await folderService.deleteFolder(subfolder._id);
-          console.log(`✅ Subcarpeta "${subfolder.name}" eliminada`);
         }
         
         // Luego eliminar la carpeta principal
         await folderService.deleteFolder(folder._id);
-        console.log(`✅ Carpeta principal "${folder.name}" eliminada`);
         
         Alert.alert('✅ Éxito', `Carpeta "${folder.name}" y ${subfolders.length} subcarpeta${subfolders.length > 1 ? 's' : ''} eliminadas`);
       } else {
         await folderService.deleteFolder(folder._id);
-        console.log(`✅ Carpeta "${folder.name}" eliminada`);
         Alert.alert('✅ Éxito', `Carpeta "${folder.name}" eliminada`);
       }
       
@@ -345,12 +324,10 @@ export default function CarpetasScreen() {
     }
 
     try {
-      console.log('🗑️ Eliminando subcarpetas seleccionadas:', selectedSubfolders);
       
       // Eliminar solo las subcarpetas seleccionadas
       for (const subfolderId of selectedSubfolders) {
         await folderService.deleteFolder(subfolderId);
-        console.log(`✅ Subcarpeta eliminada`);
       }
       
       Alert.alert('✅ Éxito', `${selectedSubfolders.length} subcarpeta${selectedSubfolders.length > 1 ? 's' : ''} eliminada${selectedSubfolders.length > 1 ? 's' : ''}`);
@@ -367,54 +344,6 @@ export default function CarpetasScreen() {
     }
   };
 
-  const handleCleanupFolders = async () => {
-    Alert.alert(
-      'Limpiar Carpetas',
-      '¿Estás seguro de que quieres eliminar todas las carpetas vacías?',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Limpiar',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await folderService.deleteEmptyFolders();
-              Alert.alert('Éxito', 'Carpetas vacías eliminadas correctamente');
-              loadData();
-            } catch (error: any) {
-              console.error('Error limpiando carpetas:', error);
-              Alert.alert('Error', 'No se pudieron eliminar las carpetas vacías');
-            }
-          }
-        }
-      ]
-    );
-  };
-
-  const handleDebugFolders = async () => {
-    Alert.alert(
-      'Debug de Carpetas',
-      'Esta función mostrará la estructura completa de las carpetas en la consola.',
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Mostrar',
-          style: 'default',
-          onPress: async () => {
-            try {
-              const allFolders = await folderService.listFolders();
-              console.log('📁 Estructura de Carpetas Completa:');
-              console.log(JSON.stringify(allFolders, null, 2));
-              Alert.alert('Debug', 'Estructura de carpetas mostrada en la consola.');
-            } catch (error: any) {
-              console.error('Error al mostrar estructura de carpetas:', error);
-              Alert.alert('Error', 'No se pudo mostrar la estructura de carpetas.');
-            }
-          }
-        }
-      ]
-    );
-  };
 
   if (isLoading) {
     return (
@@ -441,18 +370,6 @@ export default function CarpetasScreen() {
             <Text style={styles.headerTitle}>Gestión de Carpetas</Text>
           </View>
           <View style={styles.headerActions}>
-            <TouchableOpacity 
-              style={styles.debugButton} 
-              onPress={handleDebugFolders}
-            >
-              <Ionicons name="bug" size={20} color="#9b59b6" />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.cleanupButton} 
-              onPress={handleCleanupFolders}
-            >
-              <Ionicons name="trash" size={20} color="#e74c3c" />
-            </TouchableOpacity>
             <TouchableOpacity 
               style={styles.addButton} 
               onPress={() => setShowCreateModal(true)}
@@ -545,7 +462,6 @@ export default function CarpetasScreen() {
                             return false;
                           }).length;
                           
-                          console.log(`📁 Contando subcarpetas para "${folder.name}": ${subfolderCount}`);
                           return subfolderCount;
                         })()} subcarpetas
                       </Text>
@@ -565,11 +481,12 @@ export default function CarpetasScreen() {
           onRequestClose={() => setShowCreateModal(false)}
         >
           <View style={styles.modalOverlay}>
-            <ScrollView 
-              style={styles.modalContent}
-              showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
-            >
+            <View style={styles.modalContainer}>
+              <ScrollView 
+                style={styles.modalScrollContent}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
               <View style={styles.modalHeader}>
                 <Ionicons name="folder" size={24} color="#007AFF" />
                 <Text style={styles.modalTitle}>Crear Nueva Carpeta</Text>
@@ -677,7 +594,9 @@ export default function CarpetasScreen() {
                   'Esta carpeta se creará para almacenar archivos relacionados con "' + newFolder.name + '"'
                 }
               </Text>
+              </ScrollView>
               
+              {/* Botones fijos fuera del scroll */}
               <View style={styles.modalActions}>
                 <TouchableOpacity 
                   style={[styles.modalButton, styles.cancelButton]}
@@ -693,7 +612,7 @@ export default function CarpetasScreen() {
                   <Text style={styles.createButtonText}>Crear Carpeta</Text>
                 </TouchableOpacity>
               </View>
-            </ScrollView>
+            </View>
           </View>
         </Modal>
 
@@ -724,7 +643,6 @@ export default function CarpetasScreen() {
                 <>
                   <Text style={styles.inputLabel}>Subcarpetas</Text>
                   <View style={styles.subfoldersContainer}>
-                    {console.log('🔍 Renderizando subcarpetas:', subfoldersToEdit)}
                     {subfoldersToEdit.map((subfolder, index) => (
                       <View key={subfolder._id} style={styles.subfolderEditItem}>
                         <TextInput
@@ -873,26 +791,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
-  debugButton: {
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: '#f8f9fa',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  cleanupButton: {
-    padding: 10,
-    borderRadius: 10,
-    backgroundColor: '#f8f9fa',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
   backButton: {
     padding: 10,
     borderRadius: 10,
@@ -944,7 +842,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'white',
     borderRadius: 16,
     padding: 20,
-    marginBottom: 18,
+    marginBottom: 24,
     marginHorizontal: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 3 },
@@ -1037,6 +935,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  modalContainer: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    margin: 20,
+    width: '90%',
+    maxHeight: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+    flex: 1,
+  },
   modalContent: {
     backgroundColor: 'white',
     borderRadius: 20,
@@ -1049,6 +960,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 20,
     elevation: 10,
+  },
+  modalScrollContent: {
+    flex: 1,
+    padding: 28,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1087,8 +1002,13 @@ const styles = StyleSheet.create({
   modalActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 28,
+    paddingHorizontal: 28,
+    paddingVertical: 20,
+    paddingBottom: 28,
     gap: 16,
+    backgroundColor: 'white',
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
   },
   modalButton: {
     flex: 1,
@@ -1129,9 +1049,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#7f8c8d',
     marginTop: 12,
+    marginBottom: 20,
     textAlign: 'center',
     lineHeight: 20,
     fontStyle: 'italic',
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
   },
   // Estilos para subcarpetas
   subfolderSection: {
