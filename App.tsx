@@ -13,6 +13,7 @@ import NuevoUsuarioScreen from './app/(admin)/nuevo-usuario';
 import EditarUsuarioScreen from './app/(admin)/editar-usuario';
 import CarpetasScreen from './app/(admin)/carpetas';
 import SubirArchivoScreen from './app/(admin)/subir-archivo';
+import GestionarArchivosScreen from './app/(admin)/gestionar-archivos';
 import UserDashboard from './app/(user)/dashboard';
 import CarpetaDetalleScreen from './app/(user)/carpeta-detalle';
 import CambiarContrasenaScreen from './app/(user)/cambiar-contrasena';
@@ -43,6 +44,7 @@ export default function App() {
           <Stack.Screen name="Usuarios" component={UsuariosScreen} />
           <Stack.Screen name="Carpetas" component={CarpetasScreen} />
           <Stack.Screen name="SubirArchivo" component={SubirArchivoScreen} />
+          <Stack.Screen name="GestionarArchivos" component={GestionarArchivosScreen} />
         </Stack.Navigator>
       </NavigationContainer>
     </AuthProvider>

@@ -13,7 +13,7 @@ import {
   Image,
   SafeAreaView,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { folderService } from '../../services/folderService';
@@ -57,6 +57,7 @@ export default function SubirArchivoScreen() {
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [showClientSelector, setShowClientSelector] = useState(false);
+  const [hasShownInitialPopup, setHasShownInitialPopup] = useState(false);
   
   // Formulario de archivo
   const [fileData, setFileData] = useState<FileData>({
@@ -69,11 +70,63 @@ export default function SubirArchivoScreen() {
 
   const { user: currentUser } = useAuth();
   const navigation = useNavigation();
+  const route = useRoute();
 
   useEffect(() => {
     loadFolders();
     loadUsers();
   }, []);
+
+  // Detectar si viene desde GestionarArchivos y mostrar popup automáticamente
+  useEffect(() => {
+    if (route.params && !isLoading && !hasShownInitialPopup) {
+      const { folderId, folderName, isMainFolder } = route.params as any;
+      if (folderId && folderName) {
+        console.log('🎯 Detectado parámetros de navegación:', { folderId, folderName, isMainFolder });
+        
+        // Buscar la carpeta seleccionada (puede ser principal o subcarpeta)
+        let targetFolder;
+        if (isMainFolder === false) {
+          // Es una subcarpeta, buscar en todas las carpetas
+          targetFolder = folders.find(f => f._id === folderId);
+        } else {
+          // Es una carpeta principal
+          targetFolder = mainFolders.find(f => f._id === folderId);
+        }
+        
+        if (targetFolder) {
+          console.log('✅ Carpeta encontrada:', targetFolder.name, 'Tipo:', isMainFolder === false ? 'Subcarpeta' : 'Carpeta Principal');
+          
+          // Si es una subcarpeta, también necesitamos encontrar su carpeta principal
+          if (isMainFolder === false && targetFolder.parentFolder) {
+            const parentFolderId = typeof targetFolder.parentFolder === 'object' 
+              ? targetFolder.parentFolder._id 
+              : targetFolder.parentFolder;
+            const parentFolder = mainFolders.find(f => f._id === parentFolderId);
+            if (parentFolder) {
+              setSelectedMainFolder(parentFolder);
+            }
+          } else {
+            setSelectedMainFolder(targetFolder);
+          }
+          
+          setFileData(prev => ({
+            ...prev,
+            carpetaId: folderId
+          }));
+          
+          // Mostrar el popup de subir archivos después de que todo esté cargado
+          setTimeout(() => {
+            console.log('🚀 Mostrando popup de subir archivos');
+            setShowUploadModal(true);
+            setHasShownInitialPopup(true); // Marcar que ya se mostró el popup inicial
+          }, 1000);
+        } else {
+          console.log('❌ Carpeta no encontrada con ID:', folderId);
+        }
+      }
+    }
+  }, [mainFolders, folders, route.params, isLoading, hasShownInitialPopup]);
 
   const loadFolders = async () => {
     try {
@@ -200,10 +253,17 @@ export default function SubirArchivoScreen() {
         clienteDestinatario: fileData.clienteDestinatario
       });
       
-      Alert.alert('Éxito', 'Archivo subido correctamente');
-      setShowUploadModal(false);
-      resetForm();
-      loadFolders(); // Recargar para mostrar el nuevo archivo
+      Alert.alert('Éxito', 'Archivo subido correctamente', [
+        {
+          text: 'OK',
+          onPress: () => {
+            setShowUploadModal(false);
+            resetForm();
+            // Simplemente regresar a la pantalla anterior
+            navigation.goBack();
+          }
+        }
+      ]);
     } catch (error: any) {
       console.error('Error subiendo archivo:', error);
       Alert.alert('Error', 'No se pudo subir el archivo');
@@ -281,9 +341,12 @@ export default function SubirArchivoScreen() {
   };
 
   const openSubfolderModal = (mainFolder: Folder) => {
-    console.log('Abriendo modal de subcarpetas para:', mainFolder.name);
-    setSelectedMainFolder(mainFolder);
-    setShowSubfolderModal(true);
+    console.log('Navegando a gestionar archivos para:', mainFolder.name);
+    (navigation as any).navigate('GestionarArchivos', {
+      folderId: mainFolder._id,
+      folderName: mainFolder.name,
+      isMainFolder: true
+    });
   };
 
   const openUploadModal = (carpetaId?: string) => {

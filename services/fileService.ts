@@ -130,19 +130,6 @@ class FileService {
     }
   }
 
-  // Eliminar archivo
-  async deleteFile(fileId: string): Promise<void> {
-    try {
-      console.log('🗑️ Eliminando archivo:', fileId);
-      
-      const response = await api.delete(`/api/files/${fileId}`);
-      
-      console.log('✅ Archivo eliminado exitosamente:', response.data);
-    } catch (error: any) {
-      console.error('❌ Error eliminando archivo:', error);
-      throw error;
-    }
-  }
 
   // Descargar archivo
   async downloadFile(fileId: string): Promise<{ url: string; fileName: string }> {
@@ -287,6 +274,24 @@ class FileService {
         return '📦';
       default:
         return '📎';
+    }
+  }
+
+  // Eliminar archivo
+  async deleteFile(fileId: string): Promise<void> {
+    try {
+      console.log('🗑️ Eliminando archivo:', fileId);
+      
+      const response = await api.delete(`/api/files/${fileId}`);
+      
+      if (response.status === 200) {
+        console.log('✅ Archivo eliminado correctamente');
+      } else {
+        throw new Error('Error al eliminar archivo');
+      }
+    } catch (error: any) {
+      console.error('❌ Error eliminando archivo:', error);
+      throw new Error(error.response?.data?.message || 'Error al eliminar archivo');
     }
   }
 }
