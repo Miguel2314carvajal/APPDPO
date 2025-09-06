@@ -27,7 +27,7 @@ export interface UpdateFileData {
 }
 
 class FileService {
-  // Subir archivo a Cloudinary y guardar en MongoDB
+  // Subir archivo a Google Drive y guardar en MongoDB
   async uploadFile(fileData: UploadFileData): Promise<File> {
     try {
       console.log('📤 Iniciando subida de archivo:', fileData);

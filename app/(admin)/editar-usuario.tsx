@@ -76,7 +76,7 @@ export default function EditarUsuarioScreen() {
       setFormData({
         email: userData.email || '',
         companyName: userData.companyName || '',
-        maxSessions: userData.maxSessions || 3,
+        maxSessions: userData.maxSessions,
         rol: userData.rol || 'usuario',
       });
 
@@ -94,7 +94,7 @@ export default function EditarUsuarioScreen() {
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -317,7 +317,7 @@ export default function EditarUsuarioScreen() {
                     styles.sessionOption,
                     formData.maxSessions === limit && styles.selectedSession
                   ]}
-                  onPress={() => handleInputChange('maxSessions', limit.toString())}
+                  onPress={() => handleInputChange('maxSessions', limit)}
                 >
                   <Text style={[
                     styles.sessionText,
