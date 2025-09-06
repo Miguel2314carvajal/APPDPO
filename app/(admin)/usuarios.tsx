@@ -199,16 +199,16 @@ export default function UsuariosScreen() {
                 <View key={user._id} style={styles.userCard}>
                   <View style={styles.userAvatar}>
                     <Text style={styles.userInitial}>
-                      {user.nombres?.charAt(0) || user.email?.charAt(0) || '?'}
+                      {user.companyName?.charAt(0) || user.email?.charAt(0) || '?'}
                     </Text>
                   </View>
                   
                   <View style={styles.userInfo}>
                     <Text style={styles.userName}>
-                      {user.nombres} {user.apellidos}
+                      {user.companyName}
                     </Text>
                     <Text style={styles.userEmail}>{user.email}</Text>
-                    <Text style={styles.userPhone}>{user.telefono}</Text>
+                    <Text style={styles.userPhone}>Empresa: {user.companyName}</Text>
                     
                     <View style={styles.userDetails}>
                       <View style={styles.userRoleContainer}>

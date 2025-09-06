@@ -21,7 +21,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 interface Folder {
   _id: string;
   name: string;
-  parentFolder?: string | null;
+  parentFolder?: string | null | { _id: string; name: string };
   files: any[];
   usuarios: string[];
   createdAt: string;
@@ -40,7 +40,7 @@ export default function CarpetasScreen() {
   const [newFolder, setNewFolder] = useState({
     name: '',
     parentFolder: null as string | null,
-    files: [],
+    files: [] as any[],
     showSubfolderInput: false,
     subfolderName: '',
     subfolders: [] as string[] // Added for visual list of subfolders
@@ -49,7 +49,7 @@ export default function CarpetasScreen() {
   // Formulario de edición
   const [editFolder, setEditFolder] = useState({
     name: '',
-    files: []
+    files: [] as any[]
   });
   
   // Subcarpetas a editar (cuando se edita una carpeta principal)
@@ -121,7 +121,7 @@ export default function CarpetasScreen() {
       const mainFolder = await folderService.createFolder(mainFolderData);
       
       // Extraer el ID de la respuesta anidada del backend
-      const mainFolderId = mainFolder.folder?._id || mainFolder._id;
+      const mainFolderId = (mainFolder as any).folder?._id || mainFolder._id;
       
       // Crear todas las subcarpetas agregadas
       if (newFolder.subfolders.length > 0) {
@@ -1026,9 +1026,6 @@ const styles = StyleSheet.create({
   },
   createButton: {
     backgroundColor: '#27ae60',
-  },
-  editButton: {
-    backgroundColor: '#f39c12',
   },
   cancelButtonText: {
     color: 'white',

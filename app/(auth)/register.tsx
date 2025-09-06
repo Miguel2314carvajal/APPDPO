@@ -17,12 +17,8 @@ import { authService } from '../../services/authService';
 
 export default function RegisterScreen() {
   const [formData, setFormData] = useState({
-    nombres: '',
-    apellidos: '',
-    cedula: '',
-    telefono: '',
     email: '',
-    direccion: ''
+    companyName: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   
@@ -35,7 +31,7 @@ export default function RegisterScreen() {
 
   const handleRegister = async () => {
     // Validar campos requeridos
-    const requiredFields = ['nombres', 'apellidos', 'cedula', 'telefono', 'email', 'direccion'];
+    const requiredFields = ['email', 'companyName'];
     const emptyFields = requiredFields.filter(field => !formData[field as keyof typeof formData].trim());
     
     if (emptyFields.length > 0) {
@@ -107,42 +103,6 @@ export default function RegisterScreen() {
 
           {/* Formulario */}
           <View style={styles.form}>
-            <Text style={styles.label}>Nombres *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ingresa los nombres"
-              value={formData.nombres}
-              onChangeText={(value) => handleInputChange('nombres', value)}
-              autoCapitalize="words"
-            />
-
-            <Text style={styles.label}>Apellidos *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ingresa los apellidos"
-              value={formData.apellidos}
-              onChangeText={(value) => handleInputChange('apellidos', value)}
-              autoCapitalize="words"
-            />
-
-            <Text style={styles.label}>Cédula *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Número de cédula"
-              value={formData.cedula}
-              onChangeText={(value) => handleInputChange('cedula', value)}
-              keyboardType="numeric"
-            />
-
-            <Text style={styles.label}>Teléfono *</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Número de teléfono"
-              value={formData.telefono}
-              onChangeText={(value) => handleInputChange('telefono', value)}
-              keyboardType="phone-pad"
-            />
-
             <Text style={styles.label}>Email *</Text>
             <TextInput
               style={styles.input}
@@ -154,14 +114,13 @@ export default function RegisterScreen() {
               autoCorrect={false}
             />
 
-            <Text style={styles.label}>Dirección *</Text>
+            <Text style={styles.label}>Nombre de la Empresa *</Text>
             <TextInput
               style={styles.input}
-              placeholder="Dirección completa"
-              value={formData.direccion}
-              onChangeText={(value) => handleInputChange('direccion', value)}
-              multiline
-              numberOfLines={2}
+              placeholder="Nombre de tu empresa"
+              value={formData.companyName}
+              onChangeText={(value) => handleInputChange('companyName', value)}
+              autoCapitalize="words"
             />
 
             {/* Botones */}

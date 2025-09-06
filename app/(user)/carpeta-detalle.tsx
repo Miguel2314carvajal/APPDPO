@@ -38,7 +38,7 @@ interface Folder {
   name: string;
   files: File[];
   usuarios: string[];
-  parentFolder?: string | { _id: string; name: string };
+  parentFolder?: string | null | { _id: string; name: string };
   createdAt: string;
   updatedAt: string;
 }

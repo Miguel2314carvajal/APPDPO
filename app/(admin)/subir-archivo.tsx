@@ -26,7 +26,7 @@ interface Folder {
   name: string;
   files: any[];
   usuarios: string[];
-  parentFolder?: string | { _id: string; name: string };
+  parentFolder?: string | null | { _id: string; name: string };
 }
 
 interface FileData {
@@ -99,7 +99,6 @@ export default function SubirArchivoScreen() {
     try {
       console.log('🔄 Cargando usuarios...');
       console.log('🔍 Usuario actual:', currentUser?.email);
-      console.log('🔑 Token disponible:', currentUser?.token ? 'SÍ' : 'NO');
       
       const usersData = await authService.listUsers();
       console.log('✅ Usuarios cargados:', usersData.length);
@@ -298,7 +297,8 @@ export default function SubirArchivoScreen() {
         nombre: '',
         descripcion: '',
         carpetaId: carpetaId,
-        archivo: null
+        archivo: null,
+        clienteDestinatario: ''
       });
     } else {
       // Si no se proporciona carpeta, limpiamos el formulario

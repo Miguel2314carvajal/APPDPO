@@ -3,6 +3,7 @@ import api from './api';
 export interface Folder {
   _id: string;
   name: string;
+  parentFolder?: string | null | { _id: string; name: string };
   files: any[];
   usuarios: string[];
   createdAt: string;
@@ -16,7 +17,7 @@ export interface CreateFolderData {
 }
 
 export interface UpdateFolderData {
-  nombre?: string;
+  name?: string;
   descripcion?: string;
   usuarios?: string[];
 }

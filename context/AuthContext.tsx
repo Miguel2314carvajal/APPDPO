@@ -60,7 +60,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Llamar al backend real
       const response = await authService.login(credentials);
       console.log('✅ Respuesta del backend:', response);
-      console.log('📍 Dirección en respuesta:', response.direccion);
       
       // Usar los datos reales del backend
       const realUser: User = {
@@ -68,6 +67,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         email: response.email,
         companyName: response.companyName,
         rol: response.rol as 'user' | 'admin' | 'usuario',
+        maxSessions: response.maxSessions || 3,
         folders: response.folders || [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -103,6 +103,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const mockUser: User = {
         _id: '2',
         ...userData,
+        maxSessions: userData.maxSessions || 3,
         rol: 'usuario' as 'user' | 'admin',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()

@@ -129,7 +129,7 @@ export default function AdminDashboard() {
         <View style={styles.headerContent}>
           <Text style={styles.welcomeText}>¡Bienvenido, Administrador!</Text>
           <Text style={styles.userInfo}>
-            {user?.nombres} {user?.apellidos}
+            {user?.companyName}
           </Text>
         </View>
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
