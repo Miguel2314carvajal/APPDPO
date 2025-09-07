@@ -1,0 +1,43 @@
+# Archivos de desarrollo
+node_modules/
+.expo/
+.expo-shared/
+dist/
+build/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+
+# Archivos de IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Archivos de Git
+.git/
+.gitignore
+
+# Archivos de configuración local
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Archivos de testing
+__tests__/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+
+# Documentación
+README.md
+docs/
+*.md
+
+# Archivos de backend (no necesarios para la app móvil)
+../Auditorias_appMovil/

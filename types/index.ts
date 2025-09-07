@@ -35,7 +35,6 @@ export interface AuthResponse {
   _id: string;
   rol: string;
   email: string;
-  maxSessions: number;
   folders: string[];
 }
 

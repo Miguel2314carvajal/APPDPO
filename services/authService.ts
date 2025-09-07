@@ -15,9 +15,15 @@ export const authService = {
   // Login de usuario
   login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
     try {
+      console.log('🔐 Iniciando login con:', credentials.email);
+      console.log('🌐 URL del backend:', api.defaults.baseURL);
       const response = await api.post('/api/users/login', credentials);
+      console.log('✅ Respuesta del backend:', response.data);
       return response.data;
     } catch (error: any) {
+      console.error('❌ Error en login:', error);
+      console.error('❌ Error response:', error.response?.data);
+      console.error('❌ Error status:', error.response?.status);
       throw error.response?.data || { mensaje: 'Error en el login' };
     }
   },

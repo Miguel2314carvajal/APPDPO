@@ -1,9 +1,11 @@
+import { getBackendUrl } from './config';
+
 // Configuración para Google Drive API
 export const GOOGLE_DRIVE_CONFIG = {
   // Credenciales de Google Drive API
   CLIENT_ID: 'TU_CLIENT_ID_AQUI',
   CLIENT_SECRET: 'TU_CLIENT_SECRET_AQUI',
-  REDIRECT_URI: 'http://localhost:3000/auth/google/callback',
+  REDIRECT_URI: `${getBackendUrl()}/auth/google/callback`,
   
   // Scopes necesarios
   SCOPES: [

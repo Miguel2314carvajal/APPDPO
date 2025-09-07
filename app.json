@@ -37,6 +37,11 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [],
-    "scheme": "auditorias-app"
+    "scheme": "auditorias-app",
+    "extra": {
+      "eas": {
+        "projectId": "18f0a05a-4748-4d85-be68-6dab8c9bc559"
+      }
+    }
   }
 }

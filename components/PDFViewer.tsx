@@ -13,6 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getBackendUrl } from '../config/config';
 
 interface PDFViewerProps {
   fileUrl: string;
@@ -43,7 +44,7 @@ export default function PDFViewer({ fileUrl, fileName, fileId, onClose }: PDFVie
       if (fileId) {
         console.log('🔄 Obteniendo URL segura del backend para ID:', fileId);
         
-        const backendUrl = 'http://192.168.100.155:3000';
+        const backendUrl = getBackendUrl();
         const token = await AsyncStorage.getItem('token');
         
         try {
