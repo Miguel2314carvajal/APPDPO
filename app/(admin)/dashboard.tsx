@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, RefreshControl, BackHandler } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/authService';
@@ -36,6 +36,42 @@ export default function AdminDashboard() {
     React.useCallback(() => {
       loadDashboardData();
     }, [])
+  );
+
+  // Manejar el botón atrás del dispositivo (solo cuando la pantalla está enfocada)
+  useFocusEffect(
+    React.useCallback(() => {
+      const backAction = () => {
+        Alert.alert(
+          'Cerrar Sesión',
+          '¿Estás seguro que deseas salir de tu sesión?',
+          [
+            {
+              text: 'Cancelar',
+              onPress: () => null,
+              style: 'cancel',
+            },
+            {
+              text: 'Cerrar Sesión',
+              onPress: async () => {
+                await logout();
+                // Navegar al login después de cerrar sesión
+                (navigation as any).reset({
+                  index: 0,
+                  routes: [{ name: 'Login' }],
+                });
+              },
+              style: 'destructive',
+            },
+          ]
+        );
+        return true; // Evita que se ejecute la acción por defecto
+      };
+
+      const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+      return () => backHandler.remove();
+    }, [logout])
   );
 
   const loadDashboardData = async () => {
@@ -94,7 +130,11 @@ export default function AdminDashboard() {
           onPress: async () => {
             try {
               await logout();
-              (navigation as any).navigate('Login');
+              // Navegar al login después de cerrar sesión
+              (navigation as any).reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
             } catch (error) {
               console.error('Error en logout:', error);
             }

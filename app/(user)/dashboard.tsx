@@ -10,8 +10,9 @@ import {
   ActivityIndicator,
   RefreshControl,
   SafeAreaView,
+  BackHandler,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { folderService } from '../../services/folderService';
@@ -25,6 +26,7 @@ interface Folder {
   parentFolder?: string | null | { _id: string; name: string };
   createdAt: string;
   updatedAt: string;
+  totalFiles?: number; // Total de archivos incluyendo subcarpetas
 }
 
 export default function UserDashboard() {
@@ -40,12 +42,80 @@ export default function UserDashboard() {
     loadUserFolders();
   }, []);
 
+  // Manejar el botón atrás del dispositivo (solo cuando la pantalla está enfocada)
+  useFocusEffect(
+    React.useCallback(() => {
+      const backAction = () => {
+        Alert.alert(
+          'Cerrar Sesión',
+          '¿Estás seguro que deseas salir de tu sesión?',
+          [
+            {
+              text: 'Cancelar',
+              onPress: () => null,
+              style: 'cancel',
+            },
+            {
+              text: 'Cerrar Sesión',
+              onPress: async () => {
+                await logout();
+                // Navegar al login después de cerrar sesión
+                (navigation as any).reset({
+                  index: 0,
+                  routes: [{ name: 'Login' }],
+                });
+              },
+              style: 'destructive',
+            },
+          ]
+        );
+        return true; // Evita que se ejecute la acción por defecto
+      };
+
+      const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+
+      return () => backHandler.remove();
+    }, [logout])
+  );
+
   // Debug: Log user data
   useEffect(() => {
     if (user) {
       console.log('👤 Usuario en dashboard:', user);
     }
   }, [user]);
+
+  // Función para calcular el total de archivos en una carpeta incluyendo subcarpetas
+  const calculateTotalFilesInFolder = async (folderId: string): Promise<number> => {
+    try {
+      // Obtener todos los archivos de la carpeta principal
+      const folder = await folderService.getFolder(folderId);
+      let totalFiles = folder.files?.length || 0;
+      
+      // Obtener todas las carpetas para encontrar subcarpetas
+      const allFolders = await folderService.listFolders();
+      
+      // Encontrar subcarpetas de esta carpeta principal
+      const subfolders = allFolders.filter((f: any) => {
+        const parentId = typeof f.parentFolder === 'string' 
+          ? f.parentFolder 
+          : f.parentFolder?._id;
+        return parentId === folderId;
+      });
+      
+      // Sumar archivos de cada subcarpeta
+      for (const subfolder of subfolders) {
+        const subfolderData = await folderService.getFolder(subfolder._id);
+        totalFiles += subfolderData.files?.length || 0;
+      }
+      
+      console.log(`📊 Total archivos en ${folder.name}: ${totalFiles} (${folder.files?.length || 0} principales + ${totalFiles - (folder.files?.length || 0)} de subcarpetas)`);
+      return totalFiles;
+    } catch (error) {
+      console.error('❌ Error calculando total de archivos:', error);
+      return 0;
+    }
+  };
 
   const loadUserFolders = async () => {
     try {
@@ -77,9 +147,21 @@ export default function UserDashboard() {
         const mainFolders = validFolders.filter(folder => 
           !folder.parentFolder || folder.parentFolder === null
         );
+        
+        // Para cada carpeta principal, calcular el total de archivos incluyendo subcarpetas
+        const foldersWithTotalFiles = await Promise.all(
+          mainFolders.map(async (folder) => {
+            const totalFiles = await calculateTotalFilesInFolder(folder._id);
+            return {
+              ...folder,
+              totalFiles: totalFiles
+            };
+          })
+        );
+        
         console.log('📊 Carpetas válidas encontradas:', validFolders.length);
         console.log('📁 Carpetas principales (sin subcarpetas):', mainFolders.length);
-        setFolders(mainFolders);
+        setFolders(foldersWithTotalFiles);
       } else {
         console.log('⚠️ Usuario no tiene carpetas asignadas, intentando sincronizar...');
         
@@ -151,7 +233,11 @@ export default function UserDashboard() {
           onPress: async () => {
             try {
               await logout();
-              (navigation as any).navigate('Login');
+              // Navegar al login después de cerrar sesión
+              (navigation as any).reset({
+                index: 0,
+                routes: [{ name: 'Login' }],
+              });
             } catch (error) {
               console.error('Error en logout:', error);
             }
@@ -262,7 +348,7 @@ export default function UserDashboard() {
                   <Ionicons name="folder" size={32} color="#f39c12" style={styles.folderIcon} />
                   <Text style={styles.folderName}>{folder.name}</Text>
                   <Text style={styles.folderFiles}>
-                    {folder.files?.length || 0} archivos
+                    {folder.totalFiles || 0} archivos
                   </Text>
                   <Text style={styles.folderDate}>
                     {new Date(folder.createdAt).toLocaleDateString('es-ES')}
