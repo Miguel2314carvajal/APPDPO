@@ -16,12 +16,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/authService';
+import { SessionLimitDialog } from '../../components/SessionLimitDialog';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showSessionDialog, setShowSessionDialog] = useState(false);
+  const [sessionError, setSessionError] = useState<any>(null);
   
   const { login } = useAuth();
   const navigation = useNavigation();
@@ -51,6 +54,14 @@ export default function LoginScreen() {
       
     } catch (error: any) {
       console.error('Error en login:', error);
+      
+      // Manejar error de límite de sesiones
+      if (error.showSessionDialog) {
+        setSessionError(error);
+        setShowSessionDialog(true);
+        return;
+      }
+      
       Alert.alert(
         'Error de Login',
         error.mensaje || 'Error al iniciar sesión. Verifica tus credenciales.'
@@ -58,6 +69,17 @@ export default function LoginScreen() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleRetryLogin = async () => {
+    setShowSessionDialog(false);
+    setSessionError(null);
+    await handleLogin();
+  };
+
+  const handleCloseSessionDialog = () => {
+    setShowSessionDialog(false);
+    setSessionError(null);
   };
 
   return (
@@ -144,6 +166,16 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Diálogo de límite de sesiones */}
+      {showSessionDialog && sessionError && (
+        <SessionLimitDialog
+          visible={showSessionDialog}
+          onClose={handleCloseSessionDialog}
+          onRetry={handleRetryLogin}
+          error={sessionError}
+        />
+      )}
     </SafeAreaView>
   );
 }

@@ -11,6 +11,8 @@ interface AuthContextType {
   register: (userData: RegisterUserData) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
+  closeOtherSessions: () => Promise<void>;
+  getActiveSessions: () => Promise<any>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -73,8 +75,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         updatedAt: new Date().toISOString()
       };
 
-      
-
       const realToken = response.token;
       console.log('🔑 Token recibido:', realToken ? 'SÍ' : 'NO');
       console.log('👤 Usuario creado:', realUser);
@@ -86,8 +86,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       setUser(realUser);
       console.log('✅ Login completado exitosamente');
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error en login:', error);
+      
+      // Manejar error específico de límite de sesiones
+      if (error.error === 'SESSION_LIMIT_REACHED') {
+        throw {
+          ...error,
+          showSessionDialog: true
+        };
+      }
+      
       throw error;
     } finally {
       setIsLoading(false);
@@ -148,6 +157,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const closeOtherSessions = async () => {
+    try {
+      await authService.closeOtherSessions();
+    } catch (error) {
+      console.error('Error cerrando otras sesiones:', error);
+      throw error;
+    }
+  };
+
+  const getActiveSessions = async () => {
+    try {
+      return await authService.getActiveSessions();
+    } catch (error) {
+      console.error('Error obteniendo sesiones activas:', error);
+      throw error;
+    }
+  };
+
   const value: AuthContextType = {
     user,
     isLoading,
@@ -155,7 +182,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     logout,
-    updateUser
+    updateUser,
+    closeOtherSessions,
+    getActiveSessions
   };
 
   return (
