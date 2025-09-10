@@ -8,7 +8,7 @@ const API_BASE_URL = getBackendUrl();
 // Crear instancia de axios
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000,
+  timeout: 30000, // 30 segundos para Render
   headers: {
     'Content-Type': 'application/json',
   },

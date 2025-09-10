@@ -3,7 +3,7 @@ export const CONFIG = {
   // Backend URLs
   BACKEND_URL: __DEV__ 
     ? 'http://192.168.100.155:3000'  // Desarrollo local - nuevo backend
-    : 'https://auditorias-appmovil.onrender.com', // Producción - Render
+    : 'https://auditorias-appmovil-j1wj.onrender.com', // Producción - Render
   
   // Timeouts
   API_TIMEOUT: 30000, // 30 segundos para Render

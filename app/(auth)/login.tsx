@@ -56,7 +56,7 @@ export default function LoginScreen() {
       console.error('Error en login:', error);
       
       // Manejar error de límite de sesiones
-      if (error.showSessionDialog) {
+      if (error.error === 'SESSION_LIMIT_REACHED') {
         setSessionError(error);
         setShowSessionDialog(true);
         return;
@@ -169,12 +169,12 @@ export default function LoginScreen() {
 
       {/* Diálogo de límite de sesiones */}
       {showSessionDialog && sessionError && (
-        <SessionLimitDialog
-          visible={showSessionDialog}
-          onClose={handleCloseSessionDialog}
-          onRetry={handleRetryLogin}
-          error={sessionError}
-        />
+          <SessionLimitDialog
+            visible={showSessionDialog}
+            onClose={handleCloseSessionDialog}
+            onRetry={handleRetryLogin}
+            error={sessionError || { message: 'Límite de sesiones alcanzado', maxSessions: 1, activeSessions: 1 }}
+          />
       )}
     </SafeAreaView>
   );

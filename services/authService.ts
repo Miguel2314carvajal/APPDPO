@@ -3,6 +3,7 @@ import { LoginCredentials, RegisterUserData, AuthResponse } from '../types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 import * as Device from 'expo-device';
+import * as Crypto from 'expo-crypto';
 
 export interface UpdateUserData {
   nombres?: string;
@@ -19,33 +20,35 @@ const generateDeviceId = async (): Promise<string> => {
   try {
     // Intentar obtener deviceId existente
     let deviceId = await AsyncStorage.getItem('deviceId');
-    
+
+    // Si el deviceId es del formato anterior (btoa), regenerarlo
+    if (deviceId && (deviceId.includes('eyJ') || deviceId.length < 20)) {
+      console.log('🔄 DeviceId anterior detectado, regenerando...');
+      await AsyncStorage.removeItem('deviceId');
+      deviceId = null;
+    }
+
     if (!deviceId) {
-      // Generar nuevo deviceId basado en características del dispositivo
-      const deviceInfo = {
-        platform: Platform.OS,
-        brand: Device.brand || 'unknown',
-        model: Device.modelName || 'unknown',
-        osVersion: Device.osVersion || 'unknown',
-        timestamp: Date.now().toString()
-      };
-      
-      // Crear un hash simple del deviceInfo
-      const deviceString = JSON.stringify(deviceInfo);
-      deviceId = btoa(deviceString).replace(/[^a-zA-Z0-9]/g, '').substring(0, 32);
+      // Generar UUID verdaderamente único usando expo-crypto
+      deviceId = await Crypto.randomUUIDAsync();
       
       // Guardar deviceId
       await AsyncStorage.setItem('deviceId', deviceId);
-      console.log('📱 Nuevo deviceId generado:', deviceId);
+      console.log('📱 Nuevo deviceId UUID generado:', deviceId);
     } else {
       console.log('📱 DeviceId existente:', deviceId);
     }
-    
+
     return deviceId;
   } catch (error) {
     console.error('❌ Error generando deviceId:', error);
-    // Fallback a un ID aleatorio
-    return `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // Fallback a un UUID aleatorio
+    try {
+      return await Crypto.randomUUIDAsync();
+    } catch (fallbackError) {
+      console.error('❌ Error en fallback UUID:', fallbackError);
+      return `device_${Date.now()}_${Math.random().toString(36).substr(2, 15)}`;
+    }
   }
 };
 
@@ -55,12 +58,17 @@ export const authService = {
     try {
       console.log('🔐 Iniciando login con:', credentials.email);
       console.log('🌐 URL del backend:', api.defaults.baseURL);
+      console.log('⏱️ Timeout configurado:', api.defaults.timeout);
       
       // Generar deviceId único
       const deviceId = await generateDeviceId();
       console.log('📱 DeviceId para login:', deviceId);
       
       // Agregar deviceId a los headers
+      console.log('📤 Enviando petición a:', `${api.defaults.baseURL}/api/users/login`);
+      console.log('📤 Headers:', { 'x-device-id': deviceId });
+      console.log('📤 Body:', credentials);
+      
       const response = await api.post('/api/users/login', credentials, {
         headers: {
           'x-device-id': deviceId
@@ -72,6 +80,19 @@ export const authService = {
       console.error('❌ Error en login:', error);
       console.error('❌ Error response:', error.response?.data);
       console.error('❌ Error status:', error.response?.status);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Error code:', error.code);
+      
+      // Manejar errores específicos de límite de sesiones
+      if (error.response?.status === 403 && error.response?.data?.error === 'SESSION_LIMIT_REACHED') {
+        throw {
+          mensaje: error.response.data.message || 'Límite de sesiones alcanzado',
+          error: 'SESSION_LIMIT_REACHED',
+          maxSessions: error.response.data.maxSessions,
+          activeSessions: error.response.data.activeSessions
+        };
+      }
+      
       throw error.response?.data || { mensaje: 'Error en el login' };
     }
   },
@@ -203,6 +224,29 @@ export const authService = {
     } catch (error: any) {
       console.error('Error obteniendo sesiones activas:', error);
       throw error.response?.data || { mensaje: 'Error al obtener sesiones activas' };
+    }
+  },
+
+  // Limpiar deviceId (para testing)
+  async clearDeviceId(): Promise<void> {
+    try {
+      await AsyncStorage.removeItem('deviceId');
+      console.log('📱 DeviceId limpiado');
+    } catch (error) {
+      console.error('Error limpiando deviceId:', error);
+    }
+  },
+
+  // Forzar regeneración de deviceId
+  async forceRegenerateDeviceId(): Promise<string | null> {
+    try {
+      await AsyncStorage.removeItem('deviceId');
+      const newDeviceId = await generateDeviceId();
+      console.log('🔄 DeviceId regenerado:', newDeviceId);
+      return newDeviceId;
+    } catch (error) {
+      console.error('❌ Error regenerando deviceId:', error);
+      return null;
     }
   }
 };
