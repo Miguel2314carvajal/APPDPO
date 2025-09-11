@@ -193,7 +193,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 40,
+    paddingTop: 60, // Aumentar padding superior
+    paddingBottom: 40,
   },
   content: {
     flex: 1,

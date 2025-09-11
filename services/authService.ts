@@ -15,40 +15,49 @@ export interface UpdateUserData {
   folders?: string[];
 }
 
-// Función para generar un deviceId único
+// Función para generar un deviceId único y PERSISTENTE
 const generateDeviceId = async (): Promise<string> => {
   try {
     // Intentar obtener deviceId existente
     let deviceId = await AsyncStorage.getItem('deviceId');
+    console.log('🔍 DeviceId actual en AsyncStorage:', deviceId);
 
-    // Si el deviceId es del formato anterior (btoa), regenerarlo
-    if (deviceId && (deviceId.includes('eyJ') || deviceId.length < 20)) {
-      console.log('🔄 DeviceId anterior detectado, regenerando...');
-      await AsyncStorage.removeItem('deviceId');
-      deviceId = null;
-    }
-
-    if (!deviceId) {
-      // Generar UUID verdaderamente único usando expo-crypto
-      deviceId = await Crypto.randomUUIDAsync();
+    // Si NO hay deviceId o es del formato anterior, crear uno nuevo
+    if (!deviceId || deviceId.includes('eyJ') || deviceId.startsWith('device_') || deviceId.length < 20) {
+      console.log('🔄 Generando nuevo deviceId...');
       
-      // Guardar deviceId
+      // Generar UUID manual robusto (más confiable que expo-crypto)
+      deviceId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0;
+        const v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+      
+      console.log('📱 Nuevo UUID generado:', deviceId);
+      
+      // Guardar deviceId PERMANENTEMENTE
       await AsyncStorage.setItem('deviceId', deviceId);
-      console.log('📱 Nuevo deviceId UUID generado:', deviceId);
+      console.log('💾 DeviceId guardado PERMANENTEMENTE en AsyncStorage');
     } else {
-      console.log('📱 DeviceId existente:', deviceId);
+      console.log('📱 DeviceId existente reutilizado:', deviceId);
     }
 
     return deviceId;
   } catch (error) {
     console.error('❌ Error generando deviceId:', error);
-    // Fallback a un UUID aleatorio
+    // Fallback final - pero también persistente
+    const fallbackId = `device_${Date.now()}_${Math.random().toString(36).substr(2, 15)}`;
+    console.log('📱 DeviceId fallback generado:', fallbackId);
+    
+    // Intentar guardar el fallback también
     try {
-      return await Crypto.randomUUIDAsync();
-    } catch (fallbackError) {
-      console.error('❌ Error en fallback UUID:', fallbackError);
-      return `device_${Date.now()}_${Math.random().toString(36).substr(2, 15)}`;
+      await AsyncStorage.setItem('deviceId', fallbackId);
+      console.log('💾 DeviceId fallback guardado');
+    } catch (saveError) {
+      console.error('❌ Error guardando fallback:', saveError);
     }
+    
+    return fallbackId;
   }
 };
 
@@ -246,6 +255,16 @@ export const authService = {
       return newDeviceId;
     } catch (error) {
       console.error('❌ Error regenerando deviceId:', error);
+      return null;
+    }
+  },
+
+  // Función para obtener deviceId actual sin regenerarlo
+  async getCurrentDeviceId(): Promise<string | null> {
+    try {
+      return await AsyncStorage.getItem('deviceId');
+    } catch (error) {
+      console.error('❌ Error obteniendo deviceId:', error);
       return null;
     }
   }
