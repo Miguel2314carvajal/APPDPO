@@ -267,5 +267,19 @@ export const authService = {
       console.error('❌ Error obteniendo deviceId:', error);
       return null;
     }
+  },
+
+  // Cerrar sesión actual
+  async cerrarSesionActual(): Promise<void> {
+    try {
+      const deviceId = await AsyncStorage.getItem('deviceId');
+      if (deviceId) {
+        await api.post('/api/users/cerrar-sesion-actual', { deviceId });
+        console.log('✅ Sesión actual cerrada en el backend');
+      }
+    } catch (error) {
+      console.error('❌ Error cerrando sesión actual:', error);
+      throw error;
+    }
   }
 };

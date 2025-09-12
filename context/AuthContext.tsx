@@ -137,11 +137,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       setIsLoading(true);
       
+      // Obtener deviceId antes de limpiar AsyncStorage
+      const deviceId = await AsyncStorage.getItem('deviceId');
+      
+      // Intentar cerrar sesión en el backend
+      if (deviceId) {
+        try {
+          await authService.cerrarSesionActual();
+          console.log('✅ Sesión cerrada en el backend');
+        } catch (error) {
+          console.error('⚠️ Error cerrando sesión en backend:', error);
+          // Continuar con el logout local aunque falle el backend
+        }
+      }
+      
       // Limpiar AsyncStorage
       await AsyncStorage.removeItem('user');
       await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('deviceId'); // Limpiar deviceId también
       
       setUser(null);
+      console.log('✅ Logout completado');
     } catch (error) {
       console.error('Error en logout:', error);
     } finally {
