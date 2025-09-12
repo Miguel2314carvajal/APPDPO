@@ -1,20 +1,16 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   Modal,
   TouchableOpacity,
-  StyleSheet,
-  Alert,
-  ActivityIndicator
+  StyleSheet
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../context/AuthContext';
 
 interface SessionLimitDialogProps {
   visible: boolean;
   onClose: () => void;
-  onRetry: () => void;
   error: {
     message: string;
     maxSessions: number;
@@ -25,40 +21,8 @@ interface SessionLimitDialogProps {
 export const SessionLimitDialog: React.FC<SessionLimitDialogProps> = ({
   visible,
   onClose,
-  onRetry,
   error
 }) => {
-  const [isClosing, setIsClosing] = useState(false);
-  const { closeOtherSessions } = useAuth();
-
-  const handleCloseOtherSessions = async () => {
-    try {
-      setIsClosing(true);
-      await closeOtherSessions();
-      Alert.alert(
-        'Sesiones cerradas',
-        'Se han cerrado las otras sesiones activas. Ahora puedes iniciar sesión.',
-        [
-          {
-            text: 'Continuar',
-            onPress: () => {
-              onClose();
-              onRetry();
-            }
-          }
-        ]
-      );
-    } catch (error) {
-      console.error('Error cerrando sesiones:', error);
-      Alert.alert(
-        'Error',
-        'No se pudieron cerrar las otras sesiones. Intenta nuevamente.',
-        [{ text: 'OK' }]
-      );
-    } finally {
-      setIsClosing(false);
-    }
-  };
 
   return (
     <Modal
@@ -86,7 +50,7 @@ export const SessionLimitDialog: React.FC<SessionLimitDialogProps> = ({
             </View>
 
             <Text style={styles.description}>
-              Puedes cerrar las otras sesiones activas para continuar con el inicio de sesión.
+              Ya hay otra sesión activa en este momento. Por favor, contacta al usuario que está usando la cuenta para que cierre su sesión, o espera a que termine su trabajo.
             </Text>
           </View>
 
@@ -95,24 +59,7 @@ export const SessionLimitDialog: React.FC<SessionLimitDialogProps> = ({
               style={[styles.button, styles.cancelButton]}
               onPress={onClose}
             >
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.button, styles.closeSessionsButton]}
-              onPress={handleCloseOtherSessions}
-              disabled={isClosing}
-            >
-              {isClosing ? (
-                <ActivityIndicator color="#FFFFFF" size="small" />
-              ) : (
-                <>
-                  <Ionicons name="close-circle" size={20} color="#FFFFFF" />
-                  <Text style={styles.closeSessionsButtonText}>
-                    Cerrar Otras Sesiones
-                  </Text>
-                </>
-              )}
+              <Text style={styles.cancelButtonText}>Entendido</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -182,34 +129,24 @@ const styles = StyleSheet.create({
   },
   buttons: {
     flexDirection: 'row',
-    gap: 12,
+    justifyContent: 'center',
   },
   button: {
-    flex: 1,
     paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 32,
     borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
-    gap: 8,
+    minWidth: 120,
   },
   cancelButton: {
-    backgroundColor: '#E9ECEF',
+    backgroundColor: '#007BFF',
     borderWidth: 1,
-    borderColor: '#DEE2E6',
+    borderColor: '#007BFF',
   },
   cancelButtonText: {
-    color: '#6C757D',
-    fontSize: 16,
-    fontWeight: '500',
-  },
-  closeSessionsButton: {
-    backgroundColor: '#DC3545',
-  },
-  closeSessionsButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });

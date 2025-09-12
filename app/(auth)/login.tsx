@@ -71,12 +71,6 @@ export default function LoginScreen() {
     }
   };
 
-  const handleRetryLogin = async () => {
-    setShowSessionDialog(false);
-    setSessionError(null);
-    await handleLogin();
-  };
-
   const handleCloseSessionDialog = () => {
     setShowSessionDialog(false);
     setSessionError(null);
@@ -172,7 +166,6 @@ export default function LoginScreen() {
           <SessionLimitDialog
             visible={showSessionDialog}
             onClose={handleCloseSessionDialog}
-            onRetry={handleRetryLogin}
             error={sessionError || { message: 'Límite de sesiones alcanzado', maxSessions: 1, activeSessions: 1 }}
           />
       )}
