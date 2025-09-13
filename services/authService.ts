@@ -62,10 +62,13 @@ const generateDeviceId = async (): Promise<string> => {
 };
 
 export const authService = {
-  // Login de usuario
-  login: async (credentials: LoginCredentials): Promise<AuthResponse> => {
+  // Login de usuario con reintentos automáticos
+  login: async (credentials: LoginCredentials, retryCount = 0): Promise<AuthResponse> => {
+    const maxRetries = 3;
+    const retryDelay = 2000; // 2 segundos
+    
     try {
-      console.log('🔐 Iniciando login con:', credentials.email);
+      console.log(`🔐 Iniciando login con: ${credentials.email} (intento ${retryCount + 1}/${maxRetries + 1})`);
       console.log('🌐 URL del backend:', api.defaults.baseURL);
       console.log('⏱️ Timeout configurado:', api.defaults.timeout);
       
@@ -100,6 +103,19 @@ export const authService = {
           maxSessions: error.response.data.maxSessions,
           activeSessions: error.response.data.activeSessions
         };
+      }
+      
+      // Si es un error de red o timeout, reintentar
+      if (retryCount < maxRetries && (
+        error.code === 'ECONNABORTED' || 
+        error.code === 'ENOTFOUND' || 
+        error.code === 'ECONNREFUSED' ||
+        error.message?.includes('timeout') ||
+        error.message?.includes('Network Error')
+      )) {
+        console.log(`⚠️ Error de conexión, reintentando en ${retryDelay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, retryDelay));
+        return authService.login(credentials, retryCount + 1);
       }
       
       throw error.response?.data || { mensaje: 'Error en el login' };
