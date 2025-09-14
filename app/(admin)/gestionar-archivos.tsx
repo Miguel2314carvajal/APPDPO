@@ -225,28 +225,6 @@ export default function GestionarArchivosScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Buscador de archivos */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchInputContainer}>
-          <Ionicons name="search" size={20} color="#95a5a6" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Buscar archivos..."
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholderTextColor="#95a5a6"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity 
-              onPress={() => setSearchQuery('')}
-              style={styles.clearButton}
-            >
-              <Ionicons name="close-circle" size={20} color="#95a5a6" />
-            </TouchableOpacity>
-          )}
-        </View>
-      </View>
-
       <ScrollView 
         style={styles.content}
         refreshControl={
@@ -301,6 +279,28 @@ export default function GestionarArchivosScreen() {
           <View style={styles.sectionHeader}>
             <Ionicons name="attach" size={20} color="#FF9500" />
             <Text style={styles.sectionTitle}>Archivos</Text>
+          </View>
+          
+          {/* Buscador de archivos */}
+          <View style={styles.searchContainer}>
+            <View style={styles.searchInputContainer}>
+              <Ionicons name="search" size={20} color="#95a5a6" style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Buscar archivos..."
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholderTextColor="#95a5a6"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity 
+                  onPress={() => setSearchQuery('')}
+                  style={styles.clearButton}
+                >
+                  <Ionicons name="close-circle" size={20} color="#95a5a6" />
+                </TouchableOpacity>
+              )}
+            </View>
           </View>
           
           {!folder.files || folder.files.length === 0 ? (
