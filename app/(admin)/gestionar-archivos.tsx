@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
+  TextInput,
   StyleSheet,
   TouchableOpacity,
   ScrollView,
@@ -49,6 +50,7 @@ export default function GestionarArchivosScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isDeleting, setIsDeleting] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState(''); // Estado para el buscador de archivos
 
   const navigation = useNavigation();
   const route = useRoute();
@@ -223,6 +225,28 @@ export default function GestionarArchivosScreen() {
         </TouchableOpacity>
       </View>
 
+      {/* Buscador de archivos */}
+      <View style={styles.searchContainer}>
+        <View style={styles.searchInputContainer}>
+          <Ionicons name="search" size={20} color="#95a5a6" style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar archivos..."
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            placeholderTextColor="#95a5a6"
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity 
+              onPress={() => setSearchQuery('')}
+              style={styles.clearButton}
+            >
+              <Ionicons name="close-circle" size={20} color="#95a5a6" />
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+
       <ScrollView 
         style={styles.content}
         refreshControl={
@@ -289,7 +313,13 @@ export default function GestionarArchivosScreen() {
             </View>
           ) : (
             <View style={styles.filesList}>
-              {folder.files.map((file) => (
+              {folder.files
+                .filter(file => 
+                  file.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  file.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                  file.clienteDestinatario?.companyName?.toLowerCase().includes(searchQuery.toLowerCase())
+                )
+                .map((file) => (
                 <View key={file._id} style={styles.fileCard}>
                   <View style={styles.fileInfoContainer}>
                     <View style={styles.fileIcon}>
@@ -597,5 +627,42 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginLeft: 4,
+  },
+  // Estilos para el buscador de archivos
+  searchContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#f8f9fa',
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#2c3e50',
+    paddingVertical: 0,
+  },
+  clearButton: {
+    marginLeft: 10,
+    padding: 2,
   },
 });

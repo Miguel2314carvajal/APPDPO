@@ -58,6 +58,8 @@ export default function SubirArchivoScreen() {
   const [users, setUsers] = useState<User[]>([]);
   const [showClientSelector, setShowClientSelector] = useState(false);
   const [hasShownInitialPopup, setHasShownInitialPopup] = useState(false);
+  const [clientSearchQuery, setClientSearchQuery] = useState(''); // Estado para el buscador de destinatarios
+  const [folderSearchQuery, setFolderSearchQuery] = useState(''); // Estado para el buscador de carpetas
   
   // Formulario de archivo
   const [fileData, setFileData] = useState<FileData>({
@@ -497,6 +499,28 @@ export default function SubirArchivoScreen() {
 
 
 
+        {/* Buscador de carpetas */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="search" size={20} color="#95a5a6" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar carpetas..."
+              value={folderSearchQuery}
+              onChangeText={setFolderSearchQuery}
+              placeholderTextColor="#95a5a6"
+            />
+            {folderSearchQuery.length > 0 && (
+              <TouchableOpacity 
+                onPress={() => setFolderSearchQuery('')}
+                style={styles.clearButton}
+              >
+                <Ionicons name="close-circle" size={20} color="#95a5a6" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
         {/* Lista de carpetas principales */}
         <ScrollView 
           style={styles.foldersList}
@@ -519,7 +543,11 @@ export default function SubirArchivoScreen() {
               </TouchableOpacity>
             </View>
           ) : (
-            mainFolders.map((folder) => {
+            mainFolders
+              .filter(folder => 
+                folder.name.toLowerCase().includes(folderSearchQuery.toLowerCase())
+              )
+              .map((folder) => {
               const subfoldersForMain = getSubfoldersForMainFolder(folder._id);
               const totalFiles = getTotalFilesInMainFolder(folder);
               
@@ -644,8 +672,33 @@ export default function SubirArchivoScreen() {
                 {/* Lista de clientes desplegable */}
                 {showClientSelector && (
                   <View style={styles.clientDropdown}>
+                    {/* Buscador de clientes */}
+                    <View style={styles.clientSearchContainer}>
+                      <Ionicons name="search" size={16} color="#95a5a6" style={styles.clientSearchIcon} />
+                      <TextInput
+                        style={styles.clientSearchInput}
+                        placeholder="Buscar cliente..."
+                        value={clientSearchQuery}
+                        onChangeText={setClientSearchQuery}
+                        placeholderTextColor="#95a5a6"
+                      />
+                      {clientSearchQuery.length > 0 && (
+                        <TouchableOpacity 
+                          onPress={() => setClientSearchQuery('')}
+                          style={styles.clientClearButton}
+                        >
+                          <Ionicons name="close-circle" size={16} color="#95a5a6" />
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                    
                     {users.length > 0 ? (
-                      users.map((user) => (
+                      users
+                        .filter(user => 
+                          user.companyName.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
+                          user.email.toLowerCase().includes(clientSearchQuery.toLowerCase())
+                        )
+                        .map((user) => (
                         <TouchableOpacity
                           key={user._id}
                           style={[
@@ -1386,5 +1439,67 @@ const styles = StyleSheet.create({
     color: '#95a5a6',
     marginTop: 4,
     textAlign: 'center',
+  },
+  // Estilos para el buscador de clientes
+  clientSearchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 10,
+  },
+  clientSearchIcon: {
+    marginRight: 8,
+  },
+  clientSearchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#2c3e50',
+    paddingVertical: 0,
+  },
+  clientClearButton: {
+    marginLeft: 8,
+    padding: 2,
+  },
+  // Estilos para el buscador de carpetas
+  searchContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#f8f9fa',
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#2c3e50',
+    paddingVertical: 0,
+  },
+  clearButton: {
+    marginLeft: 10,
+    padding: 2,
   },
 });
