@@ -35,6 +35,7 @@ export default function CarpetasScreen() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingFolder, setEditingFolder] = useState<Folder | null>(null);
+  const [searchQuery, setSearchQuery] = useState(''); // Estado para el buscador
   
   // Formulario de nueva carpeta
   const [newFolder, setNewFolder] = useState({
@@ -168,12 +169,23 @@ export default function CarpetasScreen() {
       
       // Si es una carpeta principal y tiene subcarpetas, actualizarlas también
       if (!editingFolder.parentFolder && subfoldersToEdit.length > 0) {
-        // Actualizar cada subcarpeta
+        // Procesar cada subcarpeta
         for (const subfolder of subfoldersToEdit) {
           try {
-            await folderService.updateFolder(subfolder._id, { name: subfolder.name });
+            if (subfolder.name.trim()) {
+              if (subfolder._id.startsWith('temp_')) {
+                // Es una nueva subcarpeta, crearla
+                await folderService.createFolder({
+                  name: subfolder.name,
+                  parentFolder: editingFolder._id
+                });
+              } else {
+                // Es una subcarpeta existente, actualizarla
+                await folderService.updateFolder(subfolder._id, { name: subfolder.name });
+              }
+            }
           } catch (error) {
-            console.error(`❌ Error actualizando subcarpeta "${subfolder.name}":`, error);
+            console.error(`❌ Error procesando subcarpeta "${subfolder.name}":`, error);
           }
         }
         
@@ -344,6 +356,23 @@ export default function CarpetasScreen() {
     }
   };
 
+  const handleAddSubfolder = () => {
+    if (!editingFolder) return;
+    
+    // Crear una nueva subcarpeta temporal
+    const newSubfolder: Folder = {
+      _id: `temp_${Date.now()}`, // ID temporal
+      name: '',
+      parentFolder: editingFolder._id,
+      files: [],
+      usuarios: [],
+      createdAt: new Date().toISOString()
+    };
+    
+    // Agregar a la lista de subcarpetas a editar
+    setSubfoldersToEdit(prev => [...prev, newSubfolder]);
+  };
+
 
   if (isLoading) {
     return (
@@ -379,6 +408,28 @@ export default function CarpetasScreen() {
           </View>
         </View>
 
+        {/* Buscador */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="search" size={20} color="#95a5a6" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar carpetas..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholderTextColor="#95a5a6"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity 
+                onPress={() => setSearchQuery('')}
+                style={styles.clearButton}
+              >
+                <Ionicons name="close-circle" size={20} color="#95a5a6" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+
         {/* Lista de carpetas */}
         <ScrollView 
           style={styles.foldersList}
@@ -387,7 +438,11 @@ export default function CarpetasScreen() {
           }
           showsVerticalScrollIndicator={false}
         >
-          {folders.map((folder) => (
+          {folders
+            .filter(folder => 
+              folder.name.toLowerCase().includes(searchQuery.toLowerCase())
+            )
+            .map((folder) => (
             <View key={folder._id} style={[
               styles.folderCard,
               folder.parentFolder && styles.subfolderCard // Estilo especial para subcarpetas
@@ -639,7 +694,7 @@ export default function CarpetasScreen() {
               />
               
               {/* Mostrar subcarpetas para editar si es una carpeta principal */}
-              {editingFolder && !editingFolder.parentFolder && subfoldersToEdit.length > 0 && (
+              {editingFolder && !editingFolder.parentFolder && (
                 <>
                   <Text style={styles.inputLabel}>Subcarpetas</Text>
                   <View style={styles.subfoldersContainer}>
@@ -658,12 +713,24 @@ export default function CarpetasScreen() {
                       </View>
                     ))}
                   </View>
+                  
+                  {/* Botón para agregar nueva subcarpeta */}
+                  <TouchableOpacity 
+                    style={styles.addSubfolderButton}
+                    onPress={handleAddSubfolder}
+                  >
+                    <Ionicons name="add-circle" size={20} color="#007AFF" />
+                    <Text style={styles.addSubfolderText}>Agregar Subcarpeta</Text>
+                  </TouchableOpacity>
                 </>
               )}
               
               <Text style={styles.inputLabel}>Descripción</Text>
               <Text style={styles.descriptionText}>
-                Esta carpeta almacena archivos relacionados con "{editFolder.name}"
+                {subfoldersToEdit.length > 0 
+                  ? `Esta carpeta se actualizará con subcarpetas: ${subfoldersToEdit.map(s => s.name).filter(name => name.trim()).join(', ')}`
+                  : `Esta carpeta almacena archivos relacionados con "${editFolder.name}"`
+                }
               </Text>
               
               <View style={styles.modalActions}>
@@ -1191,5 +1258,42 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
+  },
+  // Estilos para el buscador
+  searchContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    backgroundColor: '#f8f9fa',
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  searchIcon: {
+    marginRight: 10,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#2c3e50',
+    paddingVertical: 0,
+  },
+  clearButton: {
+    marginLeft: 10,
+    padding: 2,
   },
 });
