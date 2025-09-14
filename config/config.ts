@@ -3,10 +3,10 @@ export const CONFIG = {
   // Backend URLs
   BACKEND_URL: __DEV__ 
     ? 'http://192.168.100.155:3000'  // Desarrollo local - nuevo backend
-    : 'https://auditorias-appmovil-j1wj.onrender.com', // Producción - Render
+    : 'https://auditorias-backend-production.up.railway.app', // Producción - Railway (más rápido)
   
   // Timeouts
-  API_TIMEOUT: 30000, // 30 segundos para Render
+  API_TIMEOUT: 15000, // 15 segundos para Railway (más rápido)
   
   // Configuración de la app
   APP_NAME: 'AuditoriasApp',

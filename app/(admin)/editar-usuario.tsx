@@ -102,6 +102,47 @@ export default function EditarUsuarioScreen() {
     setSelectedFolders(folders);
   };
 
+  const handleResetPassword = async () => {
+    if (!user) return;
+
+    Alert.alert(
+      'Restablecer Contraseña',
+      `¿Estás seguro de que quieres restablecer la contraseña de ${user.companyName}? Se generará una nueva contraseña temporal y se enviará por email.`,
+      [
+        {
+          text: 'Cancelar',
+          style: 'cancel'
+        },
+        {
+          text: 'Restablecer',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsSaving(true);
+              
+              const response = await authService.resetUserPassword(user._id);
+              
+              Alert.alert(
+                'Contraseña Restablecida',
+                `La nueva contraseña es: ${response.newPassword}\n\nSe ha enviado un email al usuario con esta información.`,
+                [{ text: 'OK' }]
+              );
+              
+            } catch (error: any) {
+              console.error('Error restableciendo contraseña:', error);
+              Alert.alert(
+                'Error',
+                error.mensaje || 'No se pudo restablecer la contraseña'
+              );
+            } finally {
+              setIsSaving(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
   const handleSave = async () => {
     // Validar campos requeridos
     if (!formData.email || !formData.companyName) {
@@ -330,6 +371,21 @@ export default function EditarUsuarioScreen() {
             </View>
           </View>
         )}
+
+        {/* Botón de Restablecer Contraseña */}
+        <View style={styles.inputGroup}>
+          <TouchableOpacity
+            style={styles.resetPasswordButton}
+            onPress={handleResetPassword}
+            disabled={isSaving}
+          >
+            <Ionicons name="key" size={20} color="#FF6B35" />
+            <Text style={styles.resetPasswordText}>Restablecer Contraseña</Text>
+          </TouchableOpacity>
+          <Text style={styles.resetPasswordDescription}>
+            Genera una nueva contraseña temporal y la envía por email al usuario
+          </Text>
+        </View>
 
         {/* Asignación de Carpetas - Solo para usuarios regulares */}
         {formData.rol === 'usuario' && (
@@ -687,5 +743,28 @@ const styles = StyleSheet.create({
   buttonContent: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  resetPasswordButton: {
+    backgroundColor: '#FFF3E0',
+    borderColor: '#FF6B35',
+    borderWidth: 1,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  resetPasswordText: {
+    color: '#FF6B35',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  resetPasswordDescription: {
+    color: '#666',
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 16,
   },
 });

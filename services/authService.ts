@@ -252,6 +252,19 @@ export const authService = {
     }
   },
 
+  // Restablecer contraseña de usuario (solo administradores)
+  async resetUserPassword(userId: string, newPassword?: string): Promise<any> {
+    try {
+      const response = await api.post(`/api/users/reset-password/${userId}`, {
+        newPassword
+      });
+      return response.data;
+    } catch (error: any) {
+      console.error('Error restableciendo contraseña:', error);
+      throw error.response?.data || { mensaje: 'Error al restablecer contraseña' };
+    }
+  },
+
   // Limpiar deviceId (para testing)
   async clearDeviceId(): Promise<void> {
     try {
