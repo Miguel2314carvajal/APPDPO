@@ -52,12 +52,14 @@ export default function RegisterScreen() {
       // Registrar usuario con el backend
       const response = await authService.registerUser({
         ...formData,
+        category: 'profesional_independiente',
         folders: [] // Por defecto sin carpetas asignadas
       });
       
       // Usar el contexto para mantener la sesión
       await register({
         ...formData,
+        category: 'profesional_independiente',
         folders: []
       });
       

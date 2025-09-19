@@ -222,7 +222,7 @@ export default function AdminDashboard() {
           
           <TouchableOpacity
             style={[styles.actionButton, styles.greenBorder]}
-            onPress={() => navigation.navigate('Carpetas' as never)}
+            onPress={() => navigation.navigate('CarpetasNuevas' as never)}
           >
             <Ionicons name="folder-open" size={32} color="#34C759" />
             <Text style={styles.actionButtonText}>Gestionar Carpetas</Text>
@@ -242,7 +242,7 @@ export default function AdminDashboard() {
       <View style={styles.navigationContainer}>
         <TouchableOpacity 
           style={styles.navButton} 
-          onPress={() => navigateTo('Usuarios')}
+          onPress={() => navigateTo('GestionUsuarios')}
         >
           <View style={styles.navIconContainer}>
             <Ionicons name="people" size={24} color="#007AFF" />

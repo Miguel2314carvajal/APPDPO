@@ -12,8 +12,10 @@ import {
   PermissionsAndroid,
   Platform,
   SafeAreaView,
+  TextInput,
+  BackHandler,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import RNFS from 'react-native-fs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -50,18 +52,66 @@ export default function CarpetaDetalle() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showPDFViewer, setShowPDFViewer] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const navigation = useNavigation();
   const route = useRoute();
-  const { folderId, folderName, isMainFolder } = route.params as { 
+  const { folderId, folderName, isMainFolder, parentFolderId, parentFolderName } = route.params as { 
     folderId: string; 
     folderName?: string; 
-    isMainFolder?: boolean; 
+    isMainFolder?: boolean;
+    parentFolderId?: string;
+    parentFolderName?: string;
   };
 
   useEffect(() => {
     loadFolderDetails();
   }, [folderId]);
+
+  // Manejar el botón físico de atrás del celular
+  useFocusEffect(
+    React.useCallback(() => {
+      const onBackPress = () => {
+        console.log('🔄 Botón físico de atrás presionado desde:', folderName);
+        console.log('📁 Carpeta padre (parámetros):', parentFolderName, parentFolderId);
+        console.log('📁 Carpeta actual:', folder);
+        
+        // Intentar obtener la carpeta padre de los parámetros o de la carpeta actual
+        let targetParentId = parentFolderId;
+        let targetParentName = parentFolderName;
+        
+        if (!targetParentId && folder?.parentFolder) {
+          targetParentId = typeof folder.parentFolder === 'string' 
+            ? folder.parentFolder 
+            : (folder.parentFolder as any)._id;
+          targetParentName = typeof folder.parentFolder === 'string' 
+            ? 'Carpeta Padre' 
+            : (folder.parentFolder as any).name;
+          console.log('📁 Carpeta padre (de carpeta actual):', targetParentName, targetParentId);
+        }
+        
+        if (targetParentId && targetParentName) {
+          // Navegar a la carpeta padre
+          console.log('🔄 Navegando a carpeta padre:', targetParentName, targetParentId);
+          (navigation as any).navigate('CarpetaDetalle', {
+            folderId: targetParentId,
+            folderName: targetParentName,
+            isMainFolder: true
+          });
+        } else {
+          // Si no hay carpeta padre, ir al dashboard de usuario
+          console.log('🔄 Navegando al dashboard de usuario');
+          (navigation as any).navigate('UserDashboard');
+        }
+        
+        return true; // Prevenir el comportamiento por defecto
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+
+      return () => subscription.remove();
+    }, [folder, parentFolderId, parentFolderName, folderName, navigation])
+  );
 
   const loadFolderDetails = async () => {
     try {
@@ -71,20 +121,70 @@ export default function CarpetaDetalle() {
       const folderData = await folderService.getFolder(folderId);
       console.log('✅ Carpeta cargada:', folderData.name, 'Archivos:', folderData.files?.length || 0);
       
-      setFolder(folderData);
-      
-      // Si es una carpeta principal, cargar sus subcarpetas
-      if (isMainFolder) {
-        console.log('📁 Cargando subcarpetas para:', folderData.name);
-        const allFolders = await folderService.listFolders();
-        const subfoldersData = allFolders.filter((f: any) => {
-          const parentId = typeof f.parentFolder === 'string' 
-            ? f.parentFolder 
-            : f.parentFolder?._id;
-          return parentId === folderId;
-        });
-        console.log('📂 Subcarpetas encontradas:', subfoldersData.length);
-        setSubfolders(subfoldersData);
+      // Cargar subcarpetas siempre (puede ser carpeta principal o subcarpeta)
+      console.log('📁 Cargando subcarpetas para:', folderData.name);
+      try {
+        // Usar el endpoint directo para subcarpetas
+        const subfoldersResponse = await folderService.getSubfolders(folderId);
+        console.log('📁 Respuesta de subcarpetas:', subfoldersResponse);
+        
+        // El backend devuelve { subcarpetas: [...] }, extraer el array
+        const subfolders = (subfoldersResponse as any).subcarpetas || subfoldersResponse || [];
+        console.log('📂 Subcarpetas encontradas:', subfolders.length);
+        setSubfolders(subfolders as any);
+        
+        // Calcular total de archivos incluyendo subcarpetas
+        let totalFiles = folderData.files?.length || 0;
+        console.log('📊 Archivos en carpeta principal:', totalFiles);
+        
+        // Función recursiva para contar archivos en subcarpetas
+        const countFilesRecursively = async (subfolders: any[]): Promise<number> => {
+          let count = 0;
+          for (const subfolder of subfolders) {
+            try {
+              // Cargar archivos de cada subcarpeta
+              const subfolderData = await folderService.getFolder(subfolder._id);
+              const subfolderFiles = subfolderData.files?.length || 0;
+              console.log('📁 Archivos en subcarpeta', subfolder.name, ':', subfolderFiles);
+              count += subfolderFiles;
+              
+              // Buscar subcarpetas anidadas de esta subcarpeta
+              const nestedSubfoldersResponse = await folderService.getSubfolders(subfolder._id);
+              const nestedSubfolders = (nestedSubfoldersResponse as any).subcarpetas || nestedSubfoldersResponse || [];
+              if (nestedSubfolders.length > 0) {
+                count += await countFilesRecursively(nestedSubfolders);
+              }
+            } catch (error) {
+              console.error('❌ Error cargando archivos de subcarpeta', subfolder.name, ':', error);
+            }
+          }
+          return count;
+        };
+        
+        // Contar archivos de subcarpetas recursivamente
+        const subfolderFiles = await countFilesRecursively(subfolders);
+        totalFiles += subfolderFiles;
+        
+        console.log('📊 Total de archivos calculado:', totalFiles);
+        
+        // Actualizar la carpeta con el total de archivos
+        setFolder({
+          ...folderData,
+          totalFiles: totalFiles
+        } as any);
+        
+        // Si no tenemos parentFolderId, intentar obtenerlo de la carpeta actual
+        if (!parentFolderId && folderData.parentFolder) {
+          const parentId = typeof folderData.parentFolder === 'string' 
+            ? folderData.parentFolder 
+            : (folderData.parentFolder as any)._id;
+          console.log('📁 ID de carpeta padre detectado:', parentId);
+        }
+        
+      } catch (subfolderError) {
+        console.error('❌ Error cargando subcarpetas:', subfolderError);
+        setSubfolders([]);
+        setFolder(folderData as any);
       }
     } catch (error) {
       console.error('❌ Error cargando carpeta:', error);
@@ -119,12 +219,21 @@ export default function CarpetaDetalle() {
     return 'document';
   };
 
+  // Filtrar archivos basado en la búsqueda
+  const filteredFiles = folder?.files?.filter(file => 
+    file.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    file.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
+
   const openSubfolder = (subfolder: Folder) => {
-    // Navegar a la subcarpeta
+    console.log('🔄 Navegando a subcarpeta:', subfolder.name, subfolder._id);
+    // Navegar a la subcarpeta (siempre puede tener subcarpetas)
     (navigation as any).navigate('CarpetaDetalle', { 
       folderId: subfolder._id,
       folderName: subfolder.name,
-      isMainFolder: false
+      isMainFolder: true, // Cambiar a true para que siempre cargue subcarpetas
+      parentFolderId: folderId, // Agregar ID de carpeta padre para navegación
+      parentFolderName: folderName // Agregar nombre de carpeta padre
     });
   };
 
@@ -407,14 +516,46 @@ export default function CarpetaDetalle() {
         <View style={styles.header}>
           <TouchableOpacity 
             style={styles.backButton} 
-            onPress={() => navigation.goBack()}
+            onPress={() => {
+              console.log('🔄 Navegando hacia atrás desde:', folderName);
+              console.log('📁 Carpeta padre (parámetros):', parentFolderName, parentFolderId);
+              console.log('📁 Carpeta actual:', folder);
+              
+              // Intentar obtener la carpeta padre de los parámetros o de la carpeta actual
+              let targetParentId = parentFolderId;
+              let targetParentName = parentFolderName;
+              
+              if (!targetParentId && folder?.parentFolder) {
+                targetParentId = typeof folder.parentFolder === 'string' 
+                  ? folder.parentFolder 
+                  : folder.parentFolder._id;
+                targetParentName = typeof folder.parentFolder === 'string' 
+                  ? 'Carpeta Padre' 
+                  : folder.parentFolder.name;
+                console.log('📁 Carpeta padre (de carpeta actual):', targetParentName, targetParentId);
+              }
+              
+              if (targetParentId && targetParentName) {
+                // Navegar a la carpeta padre
+                console.log('🔄 Navegando a carpeta padre:', targetParentName, targetParentId);
+                (navigation as any).navigate('CarpetaDetalle', {
+                  folderId: targetParentId,
+                  folderName: targetParentName,
+                  isMainFolder: true
+                });
+              } else {
+                // Si no hay carpeta padre, ir al dashboard de usuario
+                console.log('🔄 Navegando al dashboard de usuario');
+                (navigation as any).navigate('UserDashboard');
+              }
+            }}
           >
             <Ionicons name="arrow-back" size={24} color="#3498db" />
           </TouchableOpacity>
           <View style={styles.headerInfo}>
             <Text style={styles.folderName}>{folder.name}</Text>
             <Text style={styles.fileCount}>
-              {folder.files?.length || 0} archivos
+              {(folder as any).totalFiles || folder.files?.length || 0} archivos
             </Text>
           </View>
         </View>
@@ -426,14 +567,26 @@ export default function CarpetaDetalle() {
             <Ionicons name="folder" size={24} color="#f39c12" />
             <Text style={styles.infoTitle}>Información de la Carpeta</Text>
           </View>
+          {folder.createdAt && (
+            <Text style={styles.infoText}>
+              <Text style={styles.infoLabel}>Creada:</Text> {new Date(folder.createdAt).toLocaleDateString('es-ES', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit' 
+              })}
+            </Text>
+          )}
+          {folder.updatedAt && (
+            <Text style={styles.infoText}>
+              <Text style={styles.infoLabel}>Última actualización:</Text> {new Date(folder.updatedAt).toLocaleDateString('es-ES', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit' 
+              })}
+            </Text>
+          )}
           <Text style={styles.infoText}>
-            <Text style={styles.infoLabel}>Creada:</Text> {new Date(folder.createdAt).toLocaleDateString('es-ES')}
-          </Text>
-          <Text style={styles.infoText}>
-            <Text style={styles.infoLabel}>Última actualización:</Text> {new Date(folder.updatedAt).toLocaleDateString('es-ES')}
-          </Text>
-          <Text style={styles.infoText}>
-            <Text style={styles.infoLabel}>Total de archivos:</Text> {folder.files?.length || 0}
+            <Text style={styles.infoLabel}>Total de archivos:</Text> {(folder as any).totalFiles || folder.files?.length || 0}
           </Text>
         </View>
       </View>
@@ -475,6 +628,28 @@ export default function CarpetaDetalle() {
           <Text style={styles.sectionTitle}>Archivos</Text>
         </View>
         
+        {/* Buscador de archivos */}
+        <View style={styles.searchContainer}>
+          <View style={styles.searchInputContainer}>
+            <Ionicons name="search" size={20} color="#7f8c8d" style={styles.searchIcon} />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Buscar archivos..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholderTextColor="#7f8c8d"
+            />
+            {searchQuery.length > 0 && (
+              <TouchableOpacity
+                style={styles.clearButton}
+                onPress={() => setSearchQuery('')}
+              >
+                <Ionicons name="close-circle" size={20} color="#7f8c8d" />
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
+        
         {!folder.files || folder.files.length === 0 ? (
           <View style={styles.emptyState}>
             <Ionicons name="folder-open" size={48} color="#f39c12" />
@@ -483,9 +658,17 @@ export default function CarpetaDetalle() {
               Esta carpeta no contiene archivos aún.
             </Text>
           </View>
+        ) : filteredFiles.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Ionicons name="search" size={48} color="#f39c12" />
+            <Text style={styles.emptyStateTitle}>No se encontraron archivos</Text>
+            <Text style={styles.emptyStateText}>
+              No hay archivos que coincidan con tu búsqueda.
+            </Text>
+          </View>
         ) : (
           <View style={styles.filesList}>
-            {folder.files.map((file) => (
+            {filteredFiles.map((file) => (
               <View key={file._id} style={styles.fileCard}>
                 <TouchableOpacity
                   style={styles.fileInfoContainer}
@@ -506,7 +689,12 @@ export default function CarpetaDetalle() {
                       </Text>
                     )}
                     <Text style={styles.fileDetails}>
-                      {file.tipo} • {formatFileSize(file.size || 0)} • {new Date(file.createdAt).toLocaleDateString('es-ES')}
+                      {file.tipo} • {formatFileSize(file.size || 0)}
+                      {file.createdAt && ` • ${new Date(file.createdAt).toLocaleDateString('es-ES', { 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit' 
+                      })}`}
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -794,5 +982,33 @@ const styles = StyleSheet.create({
   subfolderFiles: {
     fontSize: 14,
     color: '#7f8c8d',
+  },
+  searchContainer: {
+    marginBottom: 16,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  searchIcon: {
+    marginRight: 12,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#2c3e50',
+  },
+  clearButton: {
+    marginLeft: 8,
+    padding: 4,
   },
 });

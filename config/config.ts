@@ -1,9 +1,7 @@
 // Configuración de la aplicación
 export const CONFIG = {
   // Backend URLs
-  BACKEND_URL: __DEV__ 
-    ? 'http://192.168.100.155:3000'  // Desarrollo local - nuevo backend
-    : 'https://auditorias-backend-production.up.railway.app', // Producción - Railway (más rápido)
+  BACKEND_URL: 'https://auditorias-backend-production.up.railway.app', // Usar siempre producción
   
   // Timeouts
   API_TIMEOUT: 15000, // 15 segundos para Railway (más rápido)

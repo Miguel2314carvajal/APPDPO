@@ -85,31 +85,32 @@ export default function UserDashboard() {
     }
   }, [user]);
 
-  // Función para calcular el total de archivos en una carpeta incluyendo subcarpetas
+  // Función para calcular el total de archivos en una carpeta incluyendo subcarpetas recursivamente
   const calculateTotalFilesInFolder = async (folderId: string): Promise<number> => {
     try {
       // Obtener todos los archivos de la carpeta principal
       const folder = await folderService.getFolder(folderId);
       let totalFiles = folder.files?.length || 0;
+      console.log(`📁 Archivos en carpeta principal ${folder.name}: ${totalFiles}`);
       
-      // Obtener todas las carpetas para encontrar subcarpetas
-      const allFolders = await folderService.listFolders();
+      // Obtener subcarpetas directamente
+      const subfoldersResponse = await folderService.getSubfolders(folderId);
+      const subfolders = (subfoldersResponse as any).subcarpetas || subfoldersResponse || [];
+      console.log(`📂 Subcarpetas encontradas para ${folder.name}: ${subfolders.length}`);
       
-      // Encontrar subcarpetas de esta carpeta principal
-      const subfolders = allFolders.filter((f: any) => {
-        const parentId = typeof f.parentFolder === 'string' 
-          ? f.parentFolder 
-          : f.parentFolder?._id;
-        return parentId === folderId;
-      });
-      
-      // Sumar archivos de cada subcarpeta
+      // Sumar archivos de cada subcarpeta recursivamente
       for (const subfolder of subfolders) {
-        const subfolderData = await folderService.getFolder(subfolder._id);
-        totalFiles += subfolderData.files?.length || 0;
+        const subfolderFiles = subfolder.files?.length || 0;
+        console.log(`📁 Archivos en subcarpeta ${subfolder.name}: ${subfolderFiles}`);
+        totalFiles += subfolderFiles;
+        
+        // Calcular archivos de subcarpetas anidadas recursivamente
+        const nestedFiles = await calculateTotalFilesInFolder(subfolder._id);
+        console.log(`📁 Archivos en subcarpetas anidadas de ${subfolder.name}: ${nestedFiles - subfolderFiles}`);
+        totalFiles += (nestedFiles - subfolderFiles);
       }
       
-      console.log(`📊 Total archivos en ${folder.name}: ${totalFiles} (${folder.files?.length || 0} principales + ${totalFiles - (folder.files?.length || 0)} de subcarpetas)`);
+      console.log(`📊 Total archivos en ${folder.name}: ${totalFiles}`);
       return totalFiles;
     } catch (error) {
       console.error('❌ Error calculando total de archivos:', error);
@@ -120,96 +121,62 @@ export default function UserDashboard() {
   const loadUserFolders = async () => {
     try {
       console.log('🔄 Cargando carpetas del usuario:', user?.email);
-      console.log('📁 Carpetas asignadas al usuario:', user?.folders);
+      console.log('📁 Categoría del usuario:', user?.category);
+      console.log('👤 Usuario completo:', user);
       
       setIsLoading(true);
       
-      // Obtener las carpetas asignadas al usuario
-      if (user?.folders && user.folders.length > 0) {
-        console.log('🔍 Buscando', user.folders.length, 'carpetas...');
+      // Obtener carpetas por categoría del usuario
+      if (user?.category) {
+        console.log('🔍 Buscando carpetas de la categoría:', user.category);
         
-        const userFolders = await Promise.all(
-          user.folders.map(async (folderId: string) => {
-            try {
-              console.log('📂 Cargando carpeta:', folderId);
-              const folder = await folderService.getFolder(folderId);
-              console.log('✅ Carpeta cargada:', folder.name);
-              return folder;
-            } catch (error) {
-              console.error(`❌ Error cargando carpeta ${folderId}:`, error);
-              return null;
-            }
-          })
-        );
-        
-        // Filtrar carpetas válidas y solo mostrar carpetas principales (sin parentFolder)
-        const validFolders = userFolders.filter(folder => folder !== null);
-        const mainFolders = validFolders.filter(folder => 
-          !folder.parentFolder || folder.parentFolder === null
-        );
-        
-        // Para cada carpeta principal, calcular el total de archivos incluyendo subcarpetas
-        const foldersWithTotalFiles = await Promise.all(
-          mainFolders.map(async (folder) => {
-            const totalFiles = await calculateTotalFilesInFolder(folder._id);
-            return {
-              ...folder,
-              totalFiles: totalFiles
-            };
-          })
-        );
-        
-        console.log('📊 Carpetas válidas encontradas:', validFolders.length);
-        console.log('📁 Carpetas principales (sin subcarpetas):', mainFolders.length);
-        setFolders(foldersWithTotalFiles);
-      } else {
-        console.log('⚠️ Usuario no tiene carpetas asignadas, intentando sincronizar...');
-        
-        // Intentar sincronizar carpetas del usuario
         try {
-          if (!user?._id) {
-            console.log('⚠️ No se puede sincronizar: usuario sin ID');
-            setFolders([]);
-            return;
-          }
+          // Usar el nuevo método para obtener carpetas por categoría
+          const response = await folderService.getFoldersByCategory(user.category);
+          console.log('✅ Respuesta del backend:', response);
+          console.log('📁 Tipo de respuesta:', typeof response);
+          console.log('📁 Es array:', Array.isArray(response));
           
-          const syncResult = await authService.syncUserFolders(user._id);
-          console.log('🔄 Resultado de sincronización:', syncResult);
+          // El backend devuelve { category, folders: [...] }
+          const categoryFolders = response.folders || [];
+          console.log('✅ Carpetas de categoría encontradas:', categoryFolders.length);
+          console.log('📁 Carpetas encontradas:', categoryFolders);
           
-          if (syncResult.folders && syncResult.folders.length > 0) {
-            console.log('✅ Carpetas sincronizadas, cargando...');
-            
-            const userFolders = await Promise.all(
-              syncResult.folders.map(async (folderId: string) => {
-                try {
-                  const folder = await folderService.getFolder(folderId);
-                  return folder;
-                } catch (error) {
-                  console.error(`❌ Error cargando carpeta ${folderId}:`, error);
-                  return null;
-                }
-              })
-            );
-            
-            const validFolders = userFolders.filter(folder => folder !== null);
-            const mainFolders = validFolders.filter(folder => 
-              !folder.parentFolder || folder.parentFolder === null
-            );
-            console.log('📊 Carpetas válidas después de sincronización:', validFolders.length);
-            console.log('📁 Carpetas principales después de sincronización:', mainFolders.length);
-            setFolders(mainFolders);
-          } else {
-            console.log('⚠️ No se encontraron carpetas después de sincronizar');
-            setFolders([]);
-          }
-        } catch (syncError) {
-          console.error('❌ Error sincronizando carpetas:', syncError);
+          // Filtrar solo carpetas principales (sin parentFolder)
+          const mainFolders = categoryFolders.filter(folder => 
+            !folder.parentFolder || folder.parentFolder === null
+          );
+          console.log('📁 Carpetas principales filtradas:', mainFolders.length);
+          console.log('📁 Carpetas principales:', mainFolders);
+          
+          // Para cada carpeta principal, calcular el total de archivos incluyendo subcarpetas
+          const foldersWithTotalFiles = await Promise.all(
+            mainFolders.map(async (folder) => {
+              const totalFiles = await calculateTotalFilesInFolder(folder._id);
+              return {
+                ...folder,
+                totalFiles: totalFiles
+              };
+            })
+          );
+          
+          console.log('📊 Carpetas principales encontradas:', mainFolders.length);
+          console.log('📊 Carpetas con total de archivos:', foldersWithTotalFiles);
+          setFolders(foldersWithTotalFiles);
+        } catch (error: any) {
+          console.error('❌ Error obteniendo carpetas por categoría:', error);
+          console.error('❌ Detalles del error:', error.response?.data || error.message);
           setFolders([]);
         }
+      } else {
+        console.log('⚠️ Usuario sin categoría asignada');
+        console.log('⚠️ Usuario completo:', user);
+        setFolders([]);
       }
     } catch (error: any) {
       console.error('❌ Error cargando carpetas del usuario:', error);
-      Alert.alert('Error', 'No se pudieron cargar las carpetas');
+      console.error('❌ Detalles del error:', error.response?.data || error.message);
+      Alert.alert('Error', 'No se pudieron cargar las carpetas: ' + (error.response?.data?.msg || error.message));
     } finally {
       setIsLoading(false);
     }
@@ -281,7 +248,7 @@ export default function UserDashboard() {
               {user?.companyName}
             </Text>
             <Text style={styles.userRole}>
-              <Ionicons name="person" size={14} color="#95a5a6" /> Usuario Regular
+              <Ionicons name="person" size={14} color="#95a5a6" /> {user?.category?.replace('_', ' ').toUpperCase() || 'Usuario Regular'}
             </Text>
           </View>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
@@ -314,7 +281,7 @@ export default function UserDashboard() {
         <View style={styles.foldersContainer}>
           <View style={styles.sectionHeader}>
             <Ionicons name="folder" size={20} color="#2c3e50" />
-            <Text style={styles.sectionTitle}>Tus Carpetas Asignadas</Text>
+            <Text style={styles.sectionTitle}>Carpetas de tu Categoría</Text>
           </View>
           {/* Buscador */}
           <View style={{ marginBottom: 12 }}>
@@ -329,9 +296,9 @@ export default function UserDashboard() {
           {folders.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="folder-outline" size={64} color="#bdc3c7" />
-              <Text style={styles.emptyStateTitle}>No tienes carpetas asignadas</Text>
+              <Text style={styles.emptyStateTitle}>No hay carpetas disponibles</Text>
               <Text style={styles.emptyStateText}>
-                El administrador aún no te ha asignado carpetas. Contacta al administrador del sistema.
+                No hay carpetas disponibles para tu categoría. Contacta al administrador del sistema.
               </Text>
             </View>
           ) : (
@@ -350,9 +317,15 @@ export default function UserDashboard() {
                   <Text style={styles.folderFiles}>
                     {folder.totalFiles || 0} archivos
                   </Text>
-                  <Text style={styles.folderDate}>
-                    {new Date(folder.createdAt).toLocaleDateString('es-ES')}
-                  </Text>
+                  {folder.createdAt && (
+                    <Text style={styles.folderDate}>
+                      {new Date(folder.createdAt).toLocaleDateString('es-ES', { 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit' 
+                      })}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               ))}
             </View>

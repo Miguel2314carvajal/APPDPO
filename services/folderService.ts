@@ -1,19 +1,12 @@
 import api from './api';
-
-export interface Folder {
-  _id: string;
-  name: string;
-  parentFolder?: string | null | { _id: string; name: string };
-  files: any[];
-  usuarios: string[];
-  createdAt: string;
-  updatedAt: string;
-}
+import { Folder, CreateNestedFolderData, NestedFolderTree } from '../types';
 
 export interface CreateFolderData {
   name: string;
+  category: 'profesional_independiente' | 'transporte_escolar' | 'encargador_seguros';
+  description?: string;
   parentFolder?: string | null;
-  files?: string[];
+  subfolders?: CreateNestedFolderData[];
 }
 
 export interface UpdateFolderData {
@@ -111,6 +104,76 @@ class FolderService {
       return response.data;
     } catch (error: any) {
       console.error('Error obteniendo carpetas del usuario:', error);
+      throw error;
+    }
+  }
+
+  // ===== FUNCIONES PARA CARPETAS ANIDADAS =====
+
+  // Crear carpeta anidada con subcarpetas
+  async createNestedFolder(folderData: CreateNestedFolderData): Promise<Folder> {
+    try {
+      console.log('📁 Creando carpeta anidada:', folderData);
+      const response = await api.post('/api/folders/crear-anidada', folderData);
+      console.log('✅ Carpeta anidada creada:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Error creando carpeta anidada:', error);
+      throw error;
+    }
+  }
+
+  // Obtener estructura jerárquica completa
+  async getHierarchicalStructure(): Promise<NestedFolderTree[]> {
+    try {
+      const response = await api.get('/api/folders/estructura/jerarquica');
+      return response.data;
+    } catch (error: any) {
+      console.error('Error obteniendo estructura jerárquica:', error);
+      throw error;
+    }
+  }
+
+  // Obtener subcarpetas de una carpeta específica
+  async getSubfolders(folderId: string): Promise<Folder[]> {
+    try {
+      const response = await api.get(`/api/folders/${folderId}/subcarpetas`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error obteniendo subcarpetas:', error);
+      throw error;
+    }
+  }
+
+  // Agregar subcarpeta a una carpeta existente
+  async addSubfolder(folderId: string, subfolderData: { name: string; category: string }): Promise<Folder> {
+    try {
+      const response = await api.post(`/api/folders/${folderId}/subcarpetas`, subfolderData);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error agregando subcarpeta:', error);
+      throw error;
+    }
+  }
+
+  // Obtener ruta de una carpeta
+  async getFolderPath(folderId: string): Promise<{ path: string[]; folder: Folder }> {
+    try {
+      const response = await api.get(`/api/folders/${folderId}/ruta`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error obteniendo ruta de carpeta:', error);
+      throw error;
+    }
+  }
+
+  // Obtener carpetas por categoría
+  async getFoldersByCategory(category: string): Promise<{ category: string; folders: Folder[] }> {
+    try {
+      const response = await api.get(`/api/folders/categoria/${category}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('Error obteniendo carpetas por categoría:', error);
       throw error;
     }
   }

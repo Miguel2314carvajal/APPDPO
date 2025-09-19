@@ -81,7 +81,7 @@ export default function GestionarArchivosScreen() {
       const folderData = await folderService.getFolder(folderId);
       console.log('✅ Carpeta cargada:', folderData.name, 'Archivos:', folderData.files?.length || 0);
       
-      setFolder(folderData);
+      setFolder(folderData as any);
       
       // Si es una carpeta principal, cargar sus subcarpetas
       if (isMainFolder) {
@@ -94,7 +94,7 @@ export default function GestionarArchivosScreen() {
           return parentId === folderId;
         });
         console.log('📂 Subcarpetas encontradas:', subfoldersData.length);
-        setSubfolders(subfoldersData);
+        setSubfolders(subfoldersData as any);
       }
     } catch (error) {
       console.error('❌ Error cargando carpeta:', error);

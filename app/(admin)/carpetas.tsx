@@ -119,7 +119,10 @@ export default function CarpetasScreen() {
         files: []
       };
 
-      const mainFolder = await folderService.createFolder(mainFolderData);
+      const mainFolder = await folderService.createFolder({
+        ...mainFolderData,
+        category: 'profesional_independiente'
+      });
       
       // Extraer el ID de la respuesta anidada del backend
       const mainFolderId = (mainFolder as any).folder?._id || mainFolder._id;
@@ -133,7 +136,10 @@ export default function CarpetasScreen() {
             files: []
           };
           
-          const subfolder = await folderService.createFolder(subfolderData);
+          const subfolder = await folderService.createFolder({
+            ...subfolderData,
+            category: 'profesional_independiente'
+          });
         }
         
         Alert.alert('✅ Éxito', `Carpeta "${newFolder.name}" creada con ${newFolder.subfolders.length} subcarpeta${newFolder.subfolders.length > 1 ? 's' : ''}`);
@@ -177,7 +183,8 @@ export default function CarpetasScreen() {
                 // Es una nueva subcarpeta, crearla
                 await folderService.createFolder({
                   name: subfolder.name,
-                  parentFolder: editingFolder._id
+                  parentFolder: editingFolder._id,
+                  category: 'profesional_independiente'
                 });
               } else {
                 // Es una subcarpeta existente, actualizarla

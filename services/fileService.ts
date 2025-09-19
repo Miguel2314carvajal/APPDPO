@@ -18,7 +18,6 @@ export interface UploadFileData {
   descripcion: string;
   carpetaId: string;
   archivo: any;
-  clienteDestinatario: string;
 }
 
 export interface UpdateFileData {
@@ -56,7 +55,6 @@ class FileService {
       formData.append('name', fileData.nombre);
       formData.append('description', fileData.descripcion);
       formData.append('folder', fileData.carpetaId);
-      formData.append('clienteDestinatario', fileData.clienteDestinatario);
       
       console.log('📋 FormData creado, enviando al backend...');
       console.log('📋 FormData entries:');

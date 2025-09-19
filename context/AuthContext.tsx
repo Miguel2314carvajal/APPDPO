@@ -68,8 +68,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         _id: response._id,
         email: response.email,
         companyName: response.companyName,
+        category: (response.category || 'profesional_independiente') as 'profesional_independiente' | 'transporte_escolar' | 'encargador_seguros',
         rol: response.rol as 'user' | 'admin' | 'usuario',
-        maxSessions: response.maxSessions || 3,
+        // maxSessions: response.maxSessions || 3, // Removido
         folders: response.folders || [],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
@@ -112,7 +113,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const mockUser: User = {
         _id: '2',
         ...userData,
-        maxSessions: userData.maxSessions || 3,
+        // maxSessions: userData.maxSessions || 3, // Removido
         rol: 'usuario' as 'user' | 'admin',
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()

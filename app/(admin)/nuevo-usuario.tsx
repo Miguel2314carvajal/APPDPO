@@ -13,43 +13,20 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { authService } from '../../services/authService';
-import { folderService } from '../../services/folderService';
-import MultiFolderSelector from '../../components/MultiFolderSelector';
-
-interface Folder {
-  _id: string;
-  name: string;
-  files: any[];
-  usuarios: string[];
-  parentFolder?: string | null | { _id: string; name: string };
-  createdAt: string;
-  updatedAt: string;
-}
 
 export default function NuevoUsuarioScreen() {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
-  const [selectedFolders, setSelectedFolders] = useState<Folder[]>([]);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
 
   const [formData, setFormData] = useState({
     email: '',
     companyName: '',
-    maxSessions: 3,
-    carpetaId: '',
+    category: 'profesional_independiente' as 'profesional_independiente' | 'transporte_escolar' | 'encargador_seguros',
   });
 
   const handleInputChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleFoldersSelect = (folders: Folder[]) => {
-    setSelectedFolders(folders);
-    // Mantener carpetaId para compatibilidad con el backend
-    if (folders.length > 0) {
-      setFormData(prev => ({ ...prev, carpetaId: folders[0]._id }));
-    } else {
-      setFormData(prev => ({ ...prev, carpetaId: '' }));
-    }
   };
 
   const handleSubmit = async () => {
@@ -59,30 +36,25 @@ export default function NuevoUsuarioScreen() {
       return;
     }
 
-    if (selectedFolders.length === 0) {
-      Alert.alert('Error', 'Debes seleccionar al menos una carpeta para el usuario');
-      return;
-    }
-
     setLoading(true);
     try {
-      // Preparar datos con múltiples carpetas
+      // Preparar datos como en el web (solo email, empresa, categoría)
       const userData = {
         email: formData.email,
         companyName: formData.companyName,
-        maxSessions: formData.maxSessions,
-        folders: selectedFolders.map(folder => folder._id)
+        category: formData.category,
+        folders: [] // Array vacío - las carpetas se asignan automáticamente por categoría
       };
 
       await authService.registerUser(userData);
       Alert.alert(
         'Éxito', 
-        `Usuario creado correctamente con acceso a ${selectedFolders.length} carpeta${selectedFolders.length !== 1 ? 's' : ''}. Se enviará un email con las credenciales temporales.`,
+        `Usuario creado correctamente con acceso automático a todas las carpetas de la categoría "${formData.category.replace('_', ' ')}". Se enviará un email con las credenciales temporales.`,
         [{ text: 'OK', onPress: () => navigation.goBack() }]
       );
     } catch (error: any) {
       console.error('Error creando usuario:', error);
-      const errorMessage = error.response?.data?.mensaje || 'Error al crear el usuario';
+      const errorMessage = error.response?.data?.message || error.response?.data?.mensaje || 'Error al crear el usuario';
       Alert.alert('Error', errorMessage);
     } finally {
       setLoading(false);
@@ -134,45 +106,66 @@ export default function NuevoUsuarioScreen() {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Límite de dispositivos *</Text>
-            <View style={styles.maxSessionsContainer}>
-              {[1, 2, 3].map((num) => (
-                <TouchableOpacity
-                  key={num}
-                  style={[
-                    styles.maxSessionsButton,
-                    formData.maxSessions === num && styles.maxSessionsButtonActive
-                  ]}
-                  onPress={() => handleInputChange('maxSessions', num)}
-                >
-                  <Text style={[
-                    styles.maxSessionsButtonText,
-                    formData.maxSessions === num && styles.maxSessionsButtonTextActive
-                  ]}>
-                    {num}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+            <Text style={styles.inputLabel}>Categoría del Usuario *</Text>
+            <View style={styles.dropdownContainer}>
+              <TouchableOpacity
+                style={styles.dropdownButton}
+                onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}
+              >
+                <Text style={styles.dropdownButtonText}>
+                  {formData.category === 'profesional_independiente' ? 'Profesional Independiente' :
+                   formData.category === 'transporte_escolar' ? 'Transporte Escolar' :
+                   'Encargador de Seguros'}
+                </Text>
+                <Ionicons 
+                  name={showCategoryDropdown ? 'chevron-up' : 'chevron-down'} 
+                  size={20} 
+                  color="#666" 
+                />
+              </TouchableOpacity>
+              
+              {showCategoryDropdown && (
+                <View style={styles.dropdownMenu}>
+                  {[
+                    { value: 'profesional_independiente', label: 'Profesional Independiente', icon: 'person' },
+                    { value: 'transporte_escolar', label: 'Transporte Escolar', icon: 'bus' },
+                    { value: 'encargador_seguros', label: 'Encargador de Seguros', icon: 'shield-checkmark' }
+                  ].map((category) => (
+                    <TouchableOpacity
+                      key={category.value}
+                      style={[
+                        styles.dropdownItem,
+                        formData.category === category.value && styles.dropdownItemSelected
+                      ]}
+                      onPress={() => {
+                        handleInputChange('category', category.value);
+                        setShowCategoryDropdown(false);
+                      }}
+                    >
+                      <Ionicons 
+                        name={category.icon as any} 
+                        size={20} 
+                        color={formData.category === category.value ? '#007AFF' : '#666'} 
+                      />
+                      <Text style={[
+                        styles.dropdownItemText,
+                        formData.category === category.value && styles.dropdownItemTextSelected
+                      ]}>
+                        {category.label}
+                      </Text>
+                      {formData.category === category.value && (
+                        <Ionicons name="checkmark" size={20} color="#007AFF" />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
-            <Text style={styles.maxSessionsHelp}>
-              Selecciona cuántos dispositivos pueden usar esta cuenta simultáneamente
+            <Text style={styles.categoryHelp}>
+              Selecciona la categoría que mejor describe el tipo de usuario
             </Text>
           </View>
 
-          <View style={styles.sectionHeader}>
-            <Ionicons name="folder" size={24} color="#007AFF" />
-            <Text style={styles.sectionTitle}>Asignación de Carpetas</Text>
-          </View>
-
-          {/* Selector de Carpeta */}
-          <View style={styles.folderSelectorContainer}>
-            <Text style={styles.inputLabel}>Carpetas Asignadas *</Text>
-            <MultiFolderSelector
-              selectedFolders={selectedFolders}
-              onFoldersSelect={handleFoldersSelect}
-              placeholder="Seleccionar carpetas"
-            />
-          </View>
 
           <View style={styles.infoBox}>
             <Ionicons name="information-circle" size={20} color="#007AFF" />
@@ -180,8 +173,8 @@ export default function NuevoUsuarioScreen() {
               <Text style={styles.infoTitle}>Información importante:</Text>
               <Text style={styles.infoText}>
                 • El usuario recibirá un email con credenciales temporales{'\n'}
-                • Se le asignará acceso a todas las carpetas seleccionadas{'\n'}
-                • Puedes seleccionar múltiples carpetas usando los checkboxes{'\n'}
+                • Se le asignarán automáticamente todas las carpetas de la categoría seleccionada{'\n'}
+                • El usuario podrá ser asignado a un grupo para control de sesiones{'\n'}
                 • Podrá cambiar su contraseña después del primer login
               </Text>
             </View>
@@ -292,9 +285,6 @@ const styles = StyleSheet.create({
     paddingTop: 14,
     paddingBottom: 14,
   },
-  folderSelectorContainer: {
-    marginBottom: 20,
-  },
   infoBox: {
     backgroundColor: '#E3F2FD',
     borderLeftWidth: 4,
@@ -352,33 +342,69 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  maxSessionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+  dropdownContainer: {
+    position: 'relative',
     marginTop: 10,
     marginBottom: 10,
   },
-  maxSessionsButton: {
-    backgroundColor: '#e0e0e0',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 20,
+  dropdownButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: 'white',
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#e0e0e0',
+    borderRadius: 10,
+    padding: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
-  maxSessionsButtonActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  maxSessionsButtonText: {
+  dropdownButtonText: {
     fontSize: 16,
-    fontWeight: 'bold',
     color: '#333',
+    flex: 1,
   },
-  maxSessionsButtonTextActive: {
-    color: 'white',
+  dropdownMenu: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    borderRadius: 10,
+    marginTop: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 8,
+    zIndex: 1000,
   },
-  maxSessionsHelp: {
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  dropdownItemSelected: {
+    backgroundColor: '#f0f8ff',
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: '#333',
+    marginLeft: 12,
+    flex: 1,
+  },
+  dropdownItemTextSelected: {
+    color: '#007AFF',
+    fontWeight: '600',
+  },
+  categoryHelp: {
     fontSize: 14,
     color: '#666',
     marginTop: 5,
