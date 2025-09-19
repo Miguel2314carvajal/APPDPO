@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "AuditoriasApp",
-    "slug": "auditorias-app",
+    "name": "APP-PDP",
+    "slug": "app-pdp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -16,14 +16,14 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.auditorias.app"
+      "bundleIdentifier": "com.skillman.pdp"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.auditorias.app",
+      "package": "com.skillman.pdp",
       "permissions": [
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
@@ -37,7 +37,7 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [],
-    "scheme": "auditorias-app",
+    "scheme": "app-pdp",
     "extra": {
       "eas": {
         "projectId": "2f2a46f4-4b62-4ade-8432-6c53222e6cd2"

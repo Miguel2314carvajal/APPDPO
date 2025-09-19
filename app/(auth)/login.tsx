@@ -92,8 +92,8 @@ export default function LoginScreen() {
           <View style={styles.content}>
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.title}>🔐 AuditoriasApp</Text>
-              <Text style={styles.subtitle}>Sistema de Gestión de Auditorías</Text>
+              <Text style={styles.title}> APP - PDP </Text>
+              <Text style={styles.subtitle}>APPWORK</Text>
             </View>
 
             {/* Formulario */}
