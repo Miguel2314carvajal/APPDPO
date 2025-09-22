@@ -1,4 +1,4 @@
-package com.auditorias.app
+package com.skillman.pdp
 
 import android.os.Build
 import android.os.Bundle

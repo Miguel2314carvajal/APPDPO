@@ -10,7 +10,6 @@ import {
   ActivityIndicator,
   SafeAreaView,
   StatusBar,
-  Platform,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
@@ -53,6 +52,7 @@ export default function EditarUsuarioScreen() {
     companyName: '',
     maxSessions: 3,
     rol: 'usuario',
+    newPassword: '',
   });
 
   useEffect(() => {
@@ -78,6 +78,7 @@ export default function EditarUsuarioScreen() {
         companyName: userData.companyName || '',
         maxSessions: userData.maxSessions,
         rol: userData.rol || 'usuario',
+        newPassword: '',
       });
 
       // Si el usuario tiene carpetas asignadas, seleccionarlas
@@ -162,13 +163,22 @@ export default function EditarUsuarioScreen() {
       const updateData = {
         ...formData,
         // Solo incluir carpetas para usuarios regulares
-        ...(formData.rol === 'usuario' && { folders: selectedFolders.map(folder => folder._id) })
+        ...(formData.rol === 'usuario' && { folders: selectedFolders.map(folder => folder._id) }),
+        // Establecer límite de sesiones automáticamente
+        maxSessions: formData.rol === 'usuario' ? 1 : 3
       };
 
+      // Actualizar usuario
       await authService.updateUser(userId, updateData);
 
+      // Si se proporcionó una nueva contraseña, cambiarla por separado
+      if (formData.newPassword && formData.newPassword.trim()) {
+        await authService.resetUserPassword(userId, formData.newPassword);
+      }
+
+      const mainFolders = selectedFolders.filter(folder => !folder.parentFolder);
       const successMessage = formData.rol === 'usuario' 
-        ? `Usuario actualizado correctamente con acceso a ${selectedFolders.length} carpeta${selectedFolders.length !== 1 ? 's' : ''}`
+        ? `Usuario actualizado correctamente con acceso a ${mainFolders.length} carpeta${mainFolders.length !== 1 ? 's' : ''}`
         : 'Usuario actualizado correctamente como administrador';
         
       Alert.alert(
@@ -346,41 +356,38 @@ export default function EditarUsuarioScreen() {
           </View>
         </View>
 
-        {/* Límite de Sesiones - Solo para usuarios regulares */}
-        {formData.rol === 'usuario' && (
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Límite de Sesiones</Text>
-            <View style={styles.sessionSelector}>
-              {[1, 2, 3].map((limit) => (
-                <TouchableOpacity
-                  key={limit}
-                  style={[
-                    styles.sessionOption,
-                    formData.maxSessions === limit && styles.selectedSession
-                  ]}
-                  onPress={() => handleInputChange('maxSessions', limit)}
-                >
-                  <Text style={[
-                    styles.sessionText,
-                    formData.maxSessions === limit && styles.selectedSessionText
-                  ]}>
-                    {limit} {limit === 1 ? 'dispositivo' : 'dispositivos'}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
 
-        {/* Botón de Restablecer Contraseña */}
+        {/* Gestión de Contraseñas */}
+        <View style={styles.sectionHeader}>
+          <Ionicons name="key" size={24} color="#007AFF" />
+          <Text style={styles.sectionTitle}>Gestión de Contraseñas</Text>
+        </View>
+
+        {/* Campo para establecer contraseña manualmente */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.inputLabel}>Nueva Contraseña (opcional)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Dejar vacío para mantener la actual"
+            value={formData.newPassword || ''}
+            onChangeText={(value) => setFormData(prev => ({ ...prev, newPassword: value }))}
+            secureTextEntry
+            autoCapitalize="none"
+          />
+          <Text style={styles.inputDescription}>
+            Establece una contraseña específica para el usuario
+          </Text>
+        </View>
+
+        {/* Botón de Restablecer Contraseña Temporal */}
         <View style={styles.inputGroup}>
           <TouchableOpacity
             style={styles.resetPasswordButton}
             onPress={handleResetPassword}
             disabled={isSaving}
           >
-            <Ionicons name="key" size={20} color="#FF6B35" />
-            <Text style={styles.resetPasswordText}>Restablecer Contraseña</Text>
+            <Ionicons name="refresh" size={20} color="#FF6B35" />
+            <Text style={styles.resetPasswordText}>Enviar Contraseña Temporal</Text>
           </TouchableOpacity>
           <Text style={styles.resetPasswordDescription}>
             Genera una nueva contraseña temporal y la envía por email al usuario
@@ -417,14 +424,15 @@ export default function EditarUsuarioScreen() {
                 <>
                   • El usuario mantendrá acceso a todas las carpetas seleccionadas{'\n'}
                   • Puedes seleccionar múltiples carpetas usando los checkboxes{'\n'}
+                  • Los usuarios tienen límite de 1 sesión simultánea{'\n'}
                 </>
               ) : (
                 <>
                   • Los administradores tienen acceso completo al sistema{'\n'}
                   • No necesitan asignación de carpetas específicas{'\n'}
+                  • Los administradores tienen límite de 3 sesiones simultáneas{'\n'}
                 </>
               )}
-              • El límite de sesiones controla cuántos dispositivos pueden usar simultáneamente
             </Text>
           </View>
         </View>
@@ -685,6 +693,12 @@ const styles = StyleSheet.create({
   infoText: {
     color: '#1976D2',
     lineHeight: 20,
+  },
+  inputDescription: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   buttonContainer: {
     gap: 16,

@@ -85,38 +85,6 @@ export default function UserDashboard() {
     }
   }, [user]);
 
-  // Función para calcular el total de archivos en una carpeta incluyendo subcarpetas recursivamente
-  const calculateTotalFilesInFolder = async (folderId: string): Promise<number> => {
-    try {
-      // Obtener todos los archivos de la carpeta principal
-      const folder = await folderService.getFolder(folderId);
-      let totalFiles = folder.files?.length || 0;
-      console.log(`📁 Archivos en carpeta principal ${folder.name}: ${totalFiles}`);
-      
-      // Obtener subcarpetas directamente
-      const subfoldersResponse = await folderService.getSubfolders(folderId);
-      const subfolders = (subfoldersResponse as any).subcarpetas || subfoldersResponse || [];
-      console.log(`📂 Subcarpetas encontradas para ${folder.name}: ${subfolders.length}`);
-      
-      // Sumar archivos de cada subcarpeta recursivamente
-      for (const subfolder of subfolders) {
-        const subfolderFiles = subfolder.files?.length || 0;
-        console.log(`📁 Archivos en subcarpeta ${subfolder.name}: ${subfolderFiles}`);
-        totalFiles += subfolderFiles;
-        
-        // Calcular archivos de subcarpetas anidadas recursivamente
-        const nestedFiles = await calculateTotalFilesInFolder(subfolder._id);
-        console.log(`📁 Archivos en subcarpetas anidadas de ${subfolder.name}: ${nestedFiles - subfolderFiles}`);
-        totalFiles += (nestedFiles - subfolderFiles);
-      }
-      
-      console.log(`📊 Total archivos en ${folder.name}: ${totalFiles}`);
-      return totalFiles;
-    } catch (error) {
-      console.error('❌ Error calculando total de archivos:', error);
-      return 0;
-    }
-  };
 
   const loadUserFolders = async () => {
     try {
@@ -149,16 +117,11 @@ export default function UserDashboard() {
           console.log('📁 Carpetas principales filtradas:', mainFolders.length);
           console.log('📁 Carpetas principales:', mainFolders);
           
-          // Para cada carpeta principal, calcular el total de archivos incluyendo subcarpetas
-          const foldersWithTotalFiles = await Promise.all(
-            mainFolders.map(async (folder) => {
-              const totalFiles = await calculateTotalFilesInFolder(folder._id);
-              return {
-                ...folder,
-                totalFiles: totalFiles
-              };
-            })
-          );
+          // Usar el total de archivos que ya viene del backend (más eficiente)
+          const foldersWithTotalFiles = mainFolders.map(folder => ({
+            ...folder,
+            totalFiles: folder.files?.length || 0
+          }));
           
           console.log('📊 Carpetas principales encontradas:', mainFolders.length);
           console.log('📊 Carpetas con total de archivos:', foldersWithTotalFiles);

@@ -111,12 +111,14 @@ export default function MultiFolderSelector({
   };
 
   const getDisplayText = () => {
-    if (selectedFolders.length === 0) {
+    const mainFolders = selectedFolders.filter(folder => !folder.parentFolder);
+    
+    if (mainFolders.length === 0) {
       return placeholder;
-    } else if (selectedFolders.length === 1) {
-      return selectedFolders[0].name;
+    } else if (mainFolders.length === 1) {
+      return mainFolders[0].name;
     } else {
-      return `${selectedFolders.length} carpetas seleccionadas`;
+      return `${mainFolders.length} carpetas seleccionadas`;
     }
   };
 
@@ -236,7 +238,7 @@ export default function MultiFolderSelector({
             <View style={styles.modalFooter}>
               <View style={styles.selectionInfo}>
                 <Text style={styles.selectionText}>
-                  {selectedFolders.length} carpeta{selectedFolders.length !== 1 ? 's' : ''} seleccionada{selectedFolders.length !== 1 ? 's' : ''}
+                  {selectedFolders.filter(folder => !folder.parentFolder).length} carpeta{selectedFolders.filter(folder => !folder.parentFolder).length !== 1 ? 's' : ''} seleccionada{selectedFolders.filter(folder => !folder.parentFolder).length !== 1 ? 's' : ''}
                 </Text>
               </View>
               

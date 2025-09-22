@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -6,8 +6,6 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
-  ActivityIndicator,
-  TextInput,
   RefreshControl,
   SafeAreaView,
 } from 'react-native';
@@ -16,64 +14,31 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { authService } from '../../services/authService';
 import { User } from '../../types';
+import { useUsers } from '../../hooks/useUsers';
+import SearchBar from '../../components/common/SearchBar';
+import LoadingScreen from '../../components/common/LoadingScreen';
+import EmptyState from '../../components/common/EmptyState';
 
 export default function GestionUsuariosScreen() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  
   const { user: currentUser } = useAuth();
   const navigation = useNavigation();
-
-  useEffect(() => {
-    loadUsers();
-  }, []);
+  
+  const {
+    users,
+    filteredUsers,
+    isLoading,
+    isRefreshing,
+    searchQuery,
+    setSearchQuery,
+    loadUsers,
+    refreshUsers
+  } = useUsers();
 
   useFocusEffect(
     React.useCallback(() => {
       loadUsers();
-    }, [])
+    }, [loadUsers])
   );
-
-  useEffect(() => {
-    filterUsers();
-  }, [searchQuery, users]);
-
-  const loadUsers = async () => {
-    try {
-      console.log('🔄 Cargando usuarios...');
-      setIsLoading(true);
-      const response = await authService.listUsers();
-      console.log('✅ Usuarios cargados:', response.length);
-      setUsers(response);
-    } catch (error: any) {
-      console.error('❌ Error cargando usuarios:', error);
-      Alert.alert('Error', 'No se pudieron cargar los usuarios');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const refreshUsers = async () => {
-    setIsRefreshing(true);
-    await loadUsers();
-    setIsRefreshing(false);
-  };
-
-  const filterUsers = () => {
-    if (!searchQuery.trim()) {
-      setFilteredUsers(users);
-      return;
-    }
-
-    const filtered = users.filter(user => 
-      user.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-    setFilteredUsers(filtered);
-  };
 
   const handleDeleteUser = (user: User) => {
     Alert.alert(
@@ -114,10 +79,9 @@ export default function GestionUsuariosScreen() {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#3498db" />
-        <Text style={styles.loadingText}>Cargando usuarios...</Text>
-      </View>
+      <SafeAreaView style={styles.container}>
+        <LoadingScreen message="Cargando usuarios..." />
+      </SafeAreaView>
     );
   }
 
@@ -150,23 +114,11 @@ export default function GestionUsuariosScreen() {
         </View>
 
         {/* Barra de búsqueda */}
-        <View style={styles.searchContainer}>
-          <View style={styles.searchBox}>
-            <Ionicons name="search" size={20} color="#95a5a6" style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Buscar usuarios..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholderTextColor="#95a5a6"
-            />
-            {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearButton}>
-                <Ionicons name="close-circle" size={20} color="#95a5a6" />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
+        <SearchBar
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          placeholder="Buscar usuarios..."
+        />
 
         {/* Lista de usuarios */}
         <View style={styles.usersContainer}>
@@ -178,27 +130,16 @@ export default function GestionUsuariosScreen() {
           </View>
           
           {filteredUsers.length === 0 ? (
-            <View style={styles.emptyState}>
-              <Ionicons name="people-outline" size={64} color="#bdc3c7" />
-              <Text style={styles.emptyStateTitle}>
-                {searchQuery ? 'No se encontraron usuarios' : 'No hay usuarios'}
-              </Text>
-              <Text style={styles.emptyStateText}>
-                {searchQuery 
-                  ? 'Intenta con otros términos de búsqueda'
-                  : 'Crea el primer usuario del sistema'
-                }
-              </Text>
-              {!searchQuery && (
-                <TouchableOpacity 
-                  style={styles.createFirstUserButton}
-                  onPress={() => (navigation as any).navigate('NuevoUsuario')}
-                >
-                  <Ionicons name="add" size={20} color="white" />
-                  <Text style={styles.createFirstUserText}>Crear Usuario</Text>
-                </TouchableOpacity>
-              )}
-            </View>
+            <EmptyState
+              icon="people-outline"
+              title={searchQuery ? 'No se encontraron usuarios' : 'No hay usuarios'}
+              message={searchQuery 
+                ? 'Intenta con otros términos de búsqueda'
+                : 'Crea el primer usuario del sistema'
+              }
+              buttonText={!searchQuery ? 'Crear Usuario' : undefined}
+              onButtonPress={!searchQuery ? () => (navigation as any).navigate('NuevoUsuario') : undefined}
+            />
           ) : (
             <View style={styles.usersList}>
               {filteredUsers.map((user) => (
@@ -233,13 +174,13 @@ export default function GestionUsuariosScreen() {
                       <View style={styles.userCategoryContainer}>
                         <Ionicons name="folder" size={14} color="#27ae60" />
                         <Text style={styles.userCategory}>
-                          {user.category?.replace('_', ' ').toUpperCase() || 'Sin categoría'}
+                          {(user as any).category?.replace('_', ' ').toUpperCase() || 'Sin categoría'}
                         </Text>
                       </View>
                     </View>
                     
                     <Text style={styles.userCreated}>
-                      Creado: {formatDate(user.createdAt)}
+                      Creado: {formatDate(user.createdAt || new Date().toISOString())}
                     </Text>
                   </View>
                   

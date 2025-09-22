@@ -11,7 +11,6 @@ import {
   RefreshControl,
   SafeAreaView,
   StatusBar,
-  Platform,
 } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';

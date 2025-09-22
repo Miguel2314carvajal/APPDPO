@@ -33,3 +33,4 @@ console.log('✅ DESPUÉS DE CREAR LOS ARCHIVOS:');
 console.log('1. Ejecuta: npx expo prebuild --clean');
 console.log('2. Ejecuta: npx eas build --platform android --profile preview');
 console.log('');
+

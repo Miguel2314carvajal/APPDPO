@@ -13,6 +13,8 @@ export interface UpdateUserData {
   direccion?: string;
   rol?: string;
   folders?: string[];
+  newPassword?: string;
+  maxSessions?: number;
 }
 
 // Función para generar un deviceId único y PERSISTENTE

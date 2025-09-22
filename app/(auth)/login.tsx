@@ -92,8 +92,13 @@ export default function LoginScreen() {
           <View style={styles.content}>
             {/* Header */}
             <View style={styles.header}>
-              <Text style={styles.title}> APP - PDP </Text>
-              <Text style={styles.subtitle}>APPWORK</Text>
+              <View style={styles.logoContainer}>
+                <View style={styles.logoIcon}>
+                  <Ionicons name="shield-checkmark" size={60} color="#007AFF" />
+                </View>
+                <Text style={styles.title}>APP PDP</Text>
+                <Text style={styles.subtitle}>APPWORK</Text>
+              </View>
             </View>
 
             {/* Formulario */}
@@ -146,7 +151,10 @@ export default function LoginScreen() {
                 {isLoading ? (
                   <ActivityIndicator color="#fff" />
                 ) : (
-                  <Text style={styles.buttonText}>🚀 Iniciar Sesión</Text>
+                  <View style={styles.buttonContent}>
+                    <Ionicons name="rocket" size={20} color="#fff" style={styles.buttonIcon} />
+                    <Text style={styles.buttonText}>Iniciar Sesión</Text>
+                  </View>
                 )}
               </TouchableOpacity>
             </View>
@@ -197,21 +205,45 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: 50,
     paddingHorizontal: 20,
   },
+  logoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  logoIcon: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#f0f8ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    shadowColor: '#007AFF',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
   title: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: 'bold',
     color: '#2c3e50',
-    marginBottom: 10,
+    marginBottom: 5,
     textAlign: 'center',
+    letterSpacing: 1,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#7f8c8d',
+    fontSize: 18,
+    color: '#007AFF',
     textAlign: 'center',
     lineHeight: 22,
+    fontWeight: '600',
   },
   form: {
     width: '100%',
@@ -290,7 +322,15 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   primaryButton: {
-    backgroundColor: '#3498db',
+    backgroundColor: '#007AFF',
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonIcon: {
+    marginRight: 8,
   },
   buttonText: {
     color: '#ffffff',

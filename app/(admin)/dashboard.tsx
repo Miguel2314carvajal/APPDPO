@@ -79,18 +79,29 @@ export default function AdminDashboard() {
       console.log('🔄 Cargando datos del dashboard...');
       setIsLoading(true);
       
-      const [users, folders] = await Promise.all([
+      const [usersResponse, foldersResponse] = await Promise.all([
         authService.listUsers(),
         folderService.listFolders()
       ]);
       
+      // Asegurar que tenemos arrays válidos
+      const users = Array.isArray(usersResponse) ? usersResponse : 
+                   (usersResponse && Array.isArray((usersResponse as any).usuarios)) ? (usersResponse as any).usuarios :
+                   (usersResponse && Array.isArray((usersResponse as any).users)) ? (usersResponse as any).users : [];
+      
+      const folders = Array.isArray(foldersResponse) ? foldersResponse : 
+                     (foldersResponse && Array.isArray((foldersResponse as any).carpetas)) ? (foldersResponse as any).carpetas :
+                     (foldersResponse && Array.isArray((foldersResponse as any).folders)) ? (foldersResponse as any).folders : [];
+      
+      console.log('📊 Respuesta usuarios:', usersResponse);
       console.log('📊 Usuarios encontrados:', users.length);
+      console.log('📁 Respuesta carpetas:', foldersResponse);
       console.log('📁 Carpetas encontradas:', folders.length);
       
       // Calcular estadísticas más precisas
-      const totalFiles = folders.reduce((acc, folder) => acc + (folder.files?.length || 0), 0);
-      const adminUsers = users.filter(user => user.rol === 'admin').length;
-      const regularUsers = users.filter(user => user.rol === 'usuario').length;
+      const totalFiles = folders.reduce((acc: number, folder: any) => acc + (folder.files?.length || 0), 0);
+      const adminUsers = users.filter((user: any) => user.rol === 'admin').length;
+      const regularUsers = users.filter((user: any) => user.rol === 'usuario').length;
       
       const newStats = {
         totalUsers: users.length,
@@ -238,7 +249,7 @@ export default function AdminDashboard() {
         </View>
       </View>
 
-      {/* Solo el botón de Gestión de Usuarios */}
+      {/* Gestión de Usuarios */}
       <View style={styles.navigationContainer}>
         <TouchableOpacity 
           style={styles.navButton} 
@@ -256,6 +267,28 @@ export default function AdminDashboard() {
           <Ionicons name="chevron-forward" size={20} color="#95a5a6" />
         </TouchableOpacity>
       </View>
+
+      {/* Gestión de Grupos */}
+      <View style={styles.navigationContainer}>
+        <TouchableOpacity 
+          style={styles.navButton} 
+          onPress={() => navigateTo('GestionGrupos')}
+        >
+          <View style={styles.navIconContainer}>
+            <Ionicons name="layers" size={24} color="#9B59B6" />
+          </View>
+          <View style={styles.navContent}>
+            <Text style={styles.navTitle}>Gestión de Grupos</Text>
+            <Text style={styles.navDescription}>
+              Crear, editar y eliminar grupos de usuarios
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color="#95a5a6" />
+        </TouchableOpacity>
+      </View>
+
+      {/* Espaciado final */}
+      <View style={styles.finalSpacing} />
     </ScrollView>
   );
 }
@@ -414,7 +447,7 @@ const styles = StyleSheet.create({
   },
   navigationContainer: {
     padding: 20,
-    paddingBottom: 40,
+    paddingBottom: 8,
   },
   navButton: {
     flexDirection: 'row',
@@ -450,5 +483,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#7f8c8d',
     lineHeight: 20,
+  },
+  finalSpacing: {
+    height: 20,
   },
 });
