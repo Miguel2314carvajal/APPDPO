@@ -11,7 +11,7 @@ export interface CreateFolderData {
 
 export interface UpdateFolderData {
   name?: string;
-  descripcion?: string;
+  description?: string;
   usuarios?: string[];
 }
 

@@ -120,7 +120,7 @@ export default function UserDashboard() {
           // Usar el total de archivos que ya viene del backend (más eficiente)
           const foldersWithTotalFiles = mainFolders.map(folder => ({
             ...folder,
-            totalFiles: folder.files?.length || 0
+            totalFiles: folder.totalFiles || folder.files?.length || 0
           }));
           
           console.log('📊 Carpetas principales encontradas:', mainFolders.length);

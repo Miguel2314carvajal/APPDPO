@@ -239,6 +239,11 @@ export default function GestionarArchivosScreen() {
           <Text style={styles.folderDescription}>
             {isMainFolder ? 'Carpeta Principal' : 'Subcarpeta'}
           </Text>
+          {folder.description && (
+            <Text style={styles.folderDescription}>
+              {folder.description}
+            </Text>
+          )}
           <Text style={styles.folderStats}>
             📄 {folder.files?.length || 0} archivos
           </Text>

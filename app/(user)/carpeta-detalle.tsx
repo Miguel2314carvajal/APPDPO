@@ -133,44 +133,13 @@ export default function CarpetaDetalle() {
         console.log('📂 Subcarpetas encontradas:', subfolders.length);
         setSubfolders(subfolders as any);
         
-        // Calcular total de archivos incluyendo subcarpetas
-        let totalFiles = folderData.files?.length || 0;
-        console.log('📊 Archivos en carpeta principal:', totalFiles);
+        // Usar el totalFiles que ya viene del backend (solo archivos directos)
+        console.log('📊 Total de archivos directos del backend:', folderData.totalFiles);
         
-        // Función recursiva para contar archivos en subcarpetas
-        const countFilesRecursively = async (subfolders: any[]): Promise<number> => {
-          let count = 0;
-          for (const subfolder of subfolders) {
-            try {
-              // Cargar archivos de cada subcarpeta
-              const subfolderData = await folderService.getFolder(subfolder._id);
-              const subfolderFiles = subfolderData.files?.length || 0;
-              console.log('📁 Archivos en subcarpeta', subfolder.name, ':', subfolderFiles);
-              count += subfolderFiles;
-              
-              // Buscar subcarpetas anidadas de esta subcarpeta
-              const nestedSubfoldersResponse = await folderService.getSubfolders(subfolder._id);
-              const nestedSubfolders = (nestedSubfoldersResponse as any).subcarpetas || nestedSubfoldersResponse || [];
-              if (nestedSubfolders.length > 0) {
-                count += await countFilesRecursively(nestedSubfolders);
-              }
-            } catch (error) {
-              console.error('❌ Error cargando archivos de subcarpeta', subfolder.name, ':', error);
-            }
-          }
-          return count;
-        };
-        
-        // Contar archivos de subcarpetas recursivamente
-        const subfolderFiles = await countFilesRecursively(subfolders);
-        totalFiles += subfolderFiles;
-        
-        console.log('📊 Total de archivos calculado:', totalFiles);
-        
-        // Actualizar la carpeta con el total de archivos
+        // Establecer la carpeta con el totalFiles correcto del backend
         setFolder({
           ...folderData,
-          totalFiles: totalFiles
+          totalFiles: folderData.totalFiles || folderData.files?.length || 0
         } as any);
         
         // Si no tenemos parentFolderId, intentar obtenerlo de la carpeta actual
@@ -583,6 +552,11 @@ export default function CarpetaDetalle() {
                 month: '2-digit', 
                 day: '2-digit' 
               })}
+            </Text>
+          )}
+          {folder.description && (
+            <Text style={styles.infoText}>
+              <Text style={styles.infoLabel}>Descripción:</Text> {folder.description}
             </Text>
           )}
           <Text style={styles.infoText}>

@@ -449,7 +449,7 @@ const EditarCarpetaAnidada: React.FC<EditarCarpetaAnidadaProps> = ({ folder, onC
       // Actualizar la carpeta principal
       await folderService.updateFolder(folder._id, {
         name: formData.name,
-        descripcion: formData.description
+        description: formData.description
       });
       
       // Actualizar subcarpetas si hay cambios
@@ -464,14 +464,14 @@ const EditarCarpetaAnidada: React.FC<EditarCarpetaAnidadaProps> = ({ folder, onC
               console.log('🔄 Actualizando subcarpeta:', subfolder.name, subfolder._id);
               await folderService.updateFolder(subfolder._id, {
                 name: subfolder.name,
-                descripcion: subfolder.name // Usar el nombre como descripción por defecto
+                description: subfolder.name // Usar el nombre como descripción por defecto
               });
             } else {
               // Crear nueva subcarpeta
               console.log('🔄 Creando nueva subcarpeta:', subfolder.name);
               const newSubfolder = await folderService.createFolder({
                 name: subfolder.name,
-                descripcion: subfolder.name,
+                description: subfolder.name,
                 category: subfolder.category,
                 parentFolder: parentId
               });

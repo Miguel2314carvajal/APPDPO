@@ -27,3 +27,4 @@ const styles = StyleSheet.create({
     color: '#7f8c8d',
   },
 });
+

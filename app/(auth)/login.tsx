@@ -10,7 +10,8 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
-  SafeAreaView
+  SafeAreaView,
+  Image
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -93,11 +94,13 @@ export default function LoginScreen() {
             {/* Header */}
             <View style={styles.header}>
               <View style={styles.logoContainer}>
-                <View style={styles.logoIcon}>
-                  <Ionicons name="shield-checkmark" size={60} color="#007AFF" />
-                </View>
-                <Text style={styles.title}>APP PDP</Text>
-                <Text style={styles.subtitle}>APPWORK</Text>
+                <Image 
+                  source={require('../../assets/icon.png')} 
+                  style={styles.logoImage}
+                  resizeMode="contain"
+                />
+                <Text style={styles.title}>PDP GADGET APP</Text>
+                <Text style={styles.subtitle}>APPWARE</Text>
               </View>
             </View>
 
@@ -205,7 +208,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 50,
+    marginBottom: 30,
     paddingHorizontal: 20,
   },
   logoContainer: {
@@ -213,35 +216,24 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: 20,
   },
-  logoIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#f0f8ff',
-    alignItems: 'center',
-    justifyContent: 'center',
+  logoImage: {
+    width: 100,
+    height: 100,
     marginBottom: 20,
-    shadowColor: '#007AFF',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
   },
   title: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#2c3e50',
     marginBottom: 5,
     textAlign: 'center',
-    letterSpacing: 1,
+    letterSpacing: 2,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 16,
     color: '#007AFF',
     textAlign: 'center',
+    letterSpacing: 1,
     lineHeight: 22,
     fontWeight: '600',
   },
